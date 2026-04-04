@@ -91,18 +91,18 @@
 
 ## Phase 6: Assignment System
 
-- [ ] Assignment creation page
-  - [ ] Select case type, location, date
-  - [ ] Display recommended students list (prioritized by exposure)
-  - [ ] Select student and confirm assignment
-- [ ] Smart recommendation engine
-  - [ ] High priority: no exposure to selected case type
-  - [ ] Medium priority: below requirement threshold
-  - [ ] Low priority: requirement already met
+- [x] Assignment creation page
+  - [x] Select case type, location, date
+  - [x] Display recommended students list (prioritized by exposure)
+  - [x] Select student and confirm assignment
+- [x] Smart recommendation engine
+  - [x] High priority: no exposure to selected case type
+  - [x] Medium priority: below requirement threshold
+  - [x] Low priority: requirement already met
   - [ ] Factor in location repetition avoidance
-- [ ] Assignment tracking (assigned / completed / missed)
+- [x] Assignment tracking (assigned / completed / missed)
 - [ ] Bulk assign cases
-- [ ] Create audit log entry on assignment
+- [x] Create audit log entry on assignment
 
 ---
 
