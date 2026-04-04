@@ -15,15 +15,16 @@ export default async function AdminLayout({
 
   if (!user) redirect("/login");
 
+  const role = (user.app_metadata?.role as string) ?? "student";
+  if (role !== "admin") redirect(role === "ci" ? "/ci" : "/student");
+
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, full_name")
+    .select("full_name")
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") {
-    redirect(profile?.role === "ci" ? "/ci" : "/student");
-  }
+  const displayName = profile?.full_name ?? user.email ?? "Admin";
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -35,14 +36,12 @@ export default async function AdminLayout({
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-sm font-medium text-foreground">
-                {profile.full_name}
+                {displayName}
               </p>
-              <p className="text-xs text-(--text-muted) capitalize">
-                {profile.role}
-              </p>
+              <p className="text-xs text-(--text-muted) capitalize">Admin</p>
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-xs font-bold text-black">
-              {profile.full_name.charAt(0).toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </div>
           </div>
         </header>

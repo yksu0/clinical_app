@@ -18,7 +18,11 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll() {},
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+        },
       },
     }
   );
@@ -34,46 +38,32 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Logged in → redirect away from auth pages to appropriate dashboard
-  if (user && isPublic && pathname !== "/auth/callback") {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+  if (user) {
+    // Role is stored in JWT app_metadata — no DB query needed
+    const role: string = (user.app_metadata?.role as string) ?? "student";
 
-    const role = profile?.role ?? "student";
-    const url = request.nextUrl.clone();
-    url.pathname =
-      role === "admin" ? "/admin" : role === "ci" ? "/ci" : "/student";
-    return NextResponse.redirect(url);
-  }
+    // Logged in → redirect away from auth pages or root to role dashboard
+    if ((isPublic && pathname !== "/auth/callback") || pathname === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname =
+        role === "admin" ? "/admin" : role === "ci" ? "/ci" : "/student";
+      return NextResponse.redirect(url);
+    }
 
-  // Role-based route guards
-  if (user && !isPublic) {
+    // Role-based route guards
     const isAdminRoute = pathname.startsWith("/admin");
     const isCiRoute = pathname.startsWith("/ci");
 
-    if (isAdminRoute || isCiRoute) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
+    if (isAdminRoute && role !== "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = role === "ci" ? "/ci" : "/student";
+      return NextResponse.redirect(url);
+    }
 
-      const role = profile?.role ?? "student";
-
-      if (isAdminRoute && role !== "admin") {
-        const url = request.nextUrl.clone();
-        url.pathname = role === "ci" ? "/ci" : "/student";
-        return NextResponse.redirect(url);
-      }
-
-      if (isCiRoute && role !== "ci" && role !== "admin") {
-        const url = request.nextUrl.clone();
-        url.pathname = "/student";
-        return NextResponse.redirect(url);
-      }
+    if (isCiRoute && role !== "ci" && role !== "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/student";
+      return NextResponse.redirect(url);
     }
   }
 
