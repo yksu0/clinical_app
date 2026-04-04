@@ -10,6 +10,7 @@ import {
   Settings,
   Megaphone,
   ScrollText,
+  Download,
   LogOut,
 } from "lucide-react";
 import { logout } from "@/lib/actions/auth";
@@ -31,6 +32,7 @@ const NAV = [
     ],
   },
   { href: "/admin/audit", label: "Audit Logs", icon: ScrollText },
+  { href: "/admin/export", label: "Export Data", icon: Download },
 ];
 
 export default function AdminSidebar() {

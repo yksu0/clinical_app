@@ -160,17 +160,17 @@
 
 ## Phase 11: Data Export
 
-- [ ] Export student case records to CSV
-- [ ] Export progress reports to CSV
-- [ ] Admin-only access
+- [x] Export student case records to CSV
+- [x] Export progress reports to CSV
+- [x] Admin-only access
 
 ---
 
 ## Phase 12: Audit Logs
 
-- [ ] Record all admin actions (case logs, assignments, edits, deletions)
-- [ ] Audit log viewer page (admin only)
-- [ ] Filter by action type, user, date range
+- [x] Record all admin actions (case logs, assignments, edits, deletions)
+- [x] Audit log viewer page (admin only)
+- [x] Filter by action type, user, date range
 
 ---
 
@@ -212,7 +212,8 @@
 - [ ] Set environment variables in Vercel dashboard
 - [ ] Configure Supabase production project
 - [ ] Set up database backups in Supabase
-- [ ] Test production build locally (`npm run build`)
+- [x] Test production build locally (`npm run build`)
+- [x] Migrate `middleware.ts` → `proxy.ts` (Next.js 16 breaking change)
 - [ ] Verify all routes work in production
 
 ---
