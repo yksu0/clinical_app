@@ -1,6 +1,21 @@
 import { signup } from "@/lib/actions/auth";
 
-export default function SignupPage() {
+const ERROR_MESSAGES: Record<string, string> = {
+  name_not_found:
+    "Your name was not found in the student roster. Contact your instructor.",
+  signup_failed: "Sign-up failed. The email may already be in use.",
+};
+
+export default function SignupPage({
+  searchParams,
+}: {
+  searchParams: { error?: string; success?: string };
+}) {
+  const errorMsg = searchParams.error
+    ? (ERROR_MESSAGES[searchParams.error] ?? "An error occurred.")
+    : null;
+  const success = searchParams.success === "check_email";
+
   return (
     <div className="rounded-xl border border-border bg-surface p-8 shadow-2xl">
       {/* Logo / Brand */}
@@ -28,89 +43,114 @@ export default function SignupPage() {
         </p>
       </div>
 
-      {/* Form */}
-      <form action={signup} className="space-y-5">
-        <div>
-          <label
-            htmlFor="fullName"
-            className="block text-sm font-medium text-(--text-secondary) mb-1.5"
-          >
-            Full name
-          </label>
-          <input
-            id="fullName"
-            name="fullName"
-            type="text"
-            required
-            autoComplete="name"
-            placeholder="As listed in the student roster"
-            className="w-full rounded-lg border border-border bg-elevated px-4 py-2.5 text-sm text-foreground placeholder-(--text-muted) outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-(--text-secondary) mb-1.5"
-          >
-            Email address
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="you@example.com"
-            className="w-full rounded-lg border border-border bg-elevated px-4 py-2.5 text-sm text-foreground placeholder-(--text-muted) outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-(--text-secondary) mb-1.5"
-          >
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            autoComplete="new-password"
-            placeholder="Minimum 8 characters"
-            minLength={8}
-            className="w-full rounded-lg border border-border bg-elevated px-4 py-2.5 text-sm text-foreground placeholder-(--text-muted) outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
-          />
-        </div>
-
-        {/* Notice */}
-        <div className="rounded-lg border border-accent-muted bg-accent-muted px-4 py-3">
-          <p className="text-xs text-accent leading-relaxed">
-            After signing up, an admin must verify your account before you can
-            log in.
+      {/* Success state */}
+      {success ? (
+        <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-4 text-center">
+          <p className="text-sm font-medium text-green-400">Account created!</p>
+          <p className="mt-1 text-xs text-(--text-muted)">
+            Check your email to confirm your address. An admin will then verify
+            your account.
           </p>
+          <a
+            href="/login"
+            className="mt-3 inline-block text-xs font-medium text-accent hover:text-accent-hover"
+          >
+            Back to sign in →
+          </a>
         </div>
+      ) : (
+        <>
+          {errorMsg && (
+            <div className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
+              <p className="text-xs text-red-400">{errorMsg}</p>
+            </div>
+          )}
 
-        <button
-          type="submit"
-          className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface"
-        >
-          Create account
-        </button>
-      </form>
+          {/* Form */}
+          <form action={signup} className="space-y-5">
+            <div>
+              <label
+                htmlFor="fullName"
+                className="block text-sm font-medium text-(--text-secondary) mb-1.5"
+              >
+                Full name
+              </label>
+              <input
+                id="fullName"
+                name="fullName"
+                type="text"
+                required
+                autoComplete="name"
+                placeholder="As listed in the student roster"
+                className="w-full rounded-lg border border-border bg-elevated px-4 py-2.5 text-sm text-foreground placeholder-(--text-muted) outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
+              />
+            </div>
 
-      {/* Footer link */}
-      <p className="mt-6 text-center text-sm text-(--text-muted)">
-        Already have an account?{" "}
-        <a
-          href="/login"
-          className="font-medium text-accent hover:text-accent-hover transition-colors"
-        >
-          Sign in
-        </a>
-      </p>
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-(--text-secondary) mb-1.5"
+              >
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="you@example.com"
+                className="w-full rounded-lg border border-border bg-elevated px-4 py-2.5 text-sm text-foreground placeholder-(--text-muted) outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-(--text-secondary) mb-1.5"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoComplete="new-password"
+                placeholder="Minimum 8 characters"
+                minLength={8}
+                className="w-full rounded-lg border border-border bg-elevated px-4 py-2.5 text-sm text-foreground placeholder-(--text-muted) outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
+              />
+            </div>
+
+            {/* Notice */}
+            <div className="rounded-lg border border-accent-muted bg-accent-muted px-4 py-3">
+              <p className="text-xs text-accent leading-relaxed">
+                After signing up, an admin must verify your account before you
+                can log in.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface"
+            >
+              Create account
+            </button>
+          </form>
+
+          {/* Footer link */}
+          <p className="mt-6 text-center text-sm text-(--text-muted)">
+            Already have an account?{" "}
+            <a
+              href="/login"
+              className="font-medium text-accent hover:text-accent-hover transition-colors"
+            >
+              Sign in
+            </a>
+          </p>
+        </>
+      )}
     </div>
   );
 }

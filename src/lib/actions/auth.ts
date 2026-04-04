@@ -23,11 +23,23 @@ export async function signup(formData: FormData) {
   const password = formData.get("password") as string;
 
   const supabase = await createClient();
+
+  // Verify the name exists in the pre-registered roster (case-insensitive)
+  const { data: rosterEntry } = await supabase
+    .from("student_roster")
+    .select("id")
+    .ilike("full_name", fullName.trim())
+    .maybeSingle();
+
+  if (!rosterEntry) {
+    redirect("/signup?error=name_not_found");
+  }
+
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { full_name: fullName },
+      data: { full_name: fullName, roster_id: rosterEntry.id },
     },
   });
 

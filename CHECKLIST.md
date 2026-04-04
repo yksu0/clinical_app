@@ -14,54 +14,54 @@
 - [x] Set up Next.js middleware for session refresh
 - [x] Create `.env.local.example` with required env vars
 - [x] Define TypeScript types for all entities
-- [ ] Create Supabase project & obtain keys
-- [ ] Add keys to `.env.local`
-- [ ] Verify dev server runs (`npm run dev`)
+- [x] Create Supabase project & obtain keys
+- [x] Add keys to `.env.local`
+- [x] Verify dev server runs (`npm run dev`)
 
 ---
 
 ## Phase 1: Database Schema (Supabase)
 
-- [ ] Create `profiles` table (id, full_name, email, role, section, is_verified, is_active, timestamps)
-- [ ] Create `case_types` table (id, name, is_active, timestamps)
-- [ ] Create `locations` table (id, name, is_active, timestamps)
-- [ ] Create `requirements` table (id, case_type_id FK, required_count, timestamps)
-- [ ] Create `assignments` table (id, student_id FK, case_type_id FK, location_id FK, scheduled_date, status, assigned_by FK, timestamps)
-- [ ] Create `uploads` table (id, student_id FK, file_path, file_name, status, uploaded_at, processed_at)
-- [ ] Create `case_logs` table (id, student_id FK, case_type_id FK, location_id FK, upload_id FK nullable, date, notes, logged_by FK, timestamps)
-- [ ] Create `announcements` table (id, title, content, created_by FK, created_at)
-- [ ] Create `audit_logs` table (id, action_type, performed_by FK, target_table, target_id, details JSONB, created_at)
-- [ ] Set up Row-Level Security (RLS) policies per role
-- [ ] Create Supabase Storage bucket for uploads (accepted: jpg, png, pdf; max size limit)
-- [ ] Add database indexes on foreign keys and frequently queried columns
-- [ ] Add unique constraints for duplicate prevention (e.g., student + date + case_type)
+- [x] Create `profiles` table (id, full_name, email, role, section, is_verified, is_active, timestamps)
+- [x] Create `case_types` table (id, name, is_active, timestamps)
+- [x] Create `locations` table (id, name, is_active, timestamps)
+- [x] Create `requirements` table (id, case_type_id FK, required_count, timestamps)
+- [x] Create `assignments` table (id, student_id FK, case_type_id FK, location_id FK, scheduled_date, status, assigned_by FK, timestamps)
+- [x] Create `uploads` table (id, student_id FK, file_path, file_name, status, uploaded_at, processed_at)
+- [x] Create `case_logs` table (id, student_id FK, case_type_id FK, location_id FK, upload_id FK nullable, date, notes, logged_by FK, timestamps)
+- [x] Create `announcements` table (id, title, content, created_by FK, created_at)
+- [x] Create `audit_logs` table (id, action_type, performed_by FK, target_table, target_id, details JSONB, created_at)
+- [x] Set up Row-Level Security (RLS) policies per role
+- [x] Create Supabase Storage bucket for uploads (max 10 MB, no file type restriction)
+- [x] Add database indexes on foreign keys and frequently queried columns
+- [x] Add unique constraints for duplicate prevention (e.g., student + date + case_type)
 
 ---
 
 ## Phase 2: Authentication & Role Management
 
-- [ ] Build signup page (`/signup`)
-- [ ] Build login page (`/login`)
-- [ ] Implement Supabase Auth (email/password)
+- [x] Build signup page (`/signup`)
+- [x] Build login page (`/login`)
+- [x] Implement Supabase Auth (email/password)
 - [ ] On signup: match student name against pre-registered roster
-- [ ] Admin approval flow for new student accounts (`is_verified` flag)
-- [ ] Create auth callback route (`/auth/callback`)
-- [ ] Implement role-based route protection in middleware
-- [ ] Redirect users to role-specific dashboards after login
-- [ ] Build logout functionality
+- [ ] Admin approval flow for new student accounts (`is_verified` flag) — UI in Phase 3
+- [x] Create auth callback route (`/auth/callback`)
+- [x] Implement role-based route protection in middleware
+- [ ] Redirect users to role-specific dashboards after login — done in Phase 3
+- [x] Build logout functionality
 
 ---
 
 ## Phase 3: Admin — System Configuration
 
-- [ ] Case Types management page (CRUD, soft delete)
-- [ ] Locations management page (CRUD, soft delete)
-- [ ] Requirements management page (set required count per case type)
-- [ ] Student roster management page
-  - [ ] Manual add student (name, email, section)
+- [x] Case Types management page (CRUD, soft delete)
+- [x] Locations management page (CRUD, soft delete)
+- [x] Requirements management page (set required count per case type)
+- [x] Student roster management page
+  - [x] Manual add student (name, email, section)
   - [ ] Bulk import students via CSV
-  - [ ] Verify / approve student accounts
-  - [ ] Deactivate / archive students
+  - [x] Verify / approve student accounts
+  - [x] Deactivate / archive students
 
 ---
 
