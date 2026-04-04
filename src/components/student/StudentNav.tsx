@@ -4,9 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { logout } from "@/lib/actions/auth";
-import { LayoutDashboard, Upload, CalendarClock, ClipboardList, Menu, X } from "lucide-react";
+import { LayoutDashboard, Upload, CalendarClock, ClipboardList, Menu, X, Rss } from "lucide-react";
 
 const NAV = [
+  { href: "/feed", label: "Feed", icon: Rss },
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/student/upload", label: "Upload", icon: Upload },
   { href: "/student/assignments", label: "Assignments", icon: CalendarClock },

@@ -10,10 +10,12 @@ import {
   LogOut,
   Menu,
   X,
+  Rss,
 } from "lucide-react";
 import { logout } from "@/lib/actions/auth";
 
 const NAV = [
+  { href: "/feed", label: "Feed", icon: Rss, exact: false },
   { href: "/ci", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/ci/students", label: "Students", icon: Users },
   { href: "/ci/cases", label: "Case Logs", icon: ClipboardList },
