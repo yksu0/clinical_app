@@ -326,5 +326,5 @@ create policy "audit_logs: admin insert"
 --   'case-uploads',
 --   false,
 --   10485760,  -- 10 MB
---   ARRAY['image/jpeg','image/png','application/pdf']
+--   NULL       -- no file type restriction
 -- );
