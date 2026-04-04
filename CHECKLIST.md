@@ -43,11 +43,11 @@
 - [x] Build signup page (`/signup`)
 - [x] Build login page (`/login`)
 - [x] Implement Supabase Auth (email/password)
-- [ ] On signup: match student name against pre-registered roster
-- [ ] Admin approval flow for new student accounts (`is_verified` flag) — UI in Phase 3
+- [x] On signup: match student name against pre-registered roster
+- [x] Admin approval flow for new student accounts (`is_verified` flag) — UI in Phase 3
 - [x] Create auth callback route (`/auth/callback`)
 - [x] Implement role-based route protection in middleware
-- [ ] Redirect users to role-specific dashboards after login — done in Phase 3
+- [x] Redirect users to role-specific dashboards after login — done in Phase 3
 - [x] Build logout functionality
 
 ---
@@ -67,13 +67,13 @@
 
 ## Phase 4: Student — Upload System
 
-- [ ] Upload page — file picker (jpg, png, pdf)
-- [ ] Client-side validation (file type, file size)
-- [ ] Image compression before upload
-- [ ] Upload to Supabase Storage
-- [ ] Create upload record with status = "pending"
-- [ ] Upload history list with status badges (pending / processed / rejected)
-- [ ] Empty state UX ("No uploads yet")
+- [x] Upload page — file picker (jpg, png, pdf)
+- [x] Client-side validation (file type, file size)
+- [x] Image compression before upload
+- [x] Upload to Supabase Storage
+- [x] Create upload record with status = "pending"
+- [x] Upload history list with status badges (pending / processed / rejected)
+- [x] Empty state UX ("No uploads yet")
 
 ---
 
