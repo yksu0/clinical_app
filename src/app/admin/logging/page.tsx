@@ -1,7 +1,177 @@
-export default function LoggingPage() {
+import { createClient } from "@/lib/supabase/server";
+import { format } from "date-fns";
+import { Clock, CheckCircle, XCircle } from "lucide-react";
+import LogCaseForm from "./LogCaseForm";
+import { rejectUpload } from "./actions";
+import SubmitButton from "@/components/ui/SubmitButton";
+
+const STATUS_ICON = {
+  pending: <Clock className="h-3.5 w-3.5 text-(--status-pending)" />,
+  processed: <CheckCircle className="h-3.5 w-3.5 text-(--status-processed)" />,
+  rejected: <XCircle className="h-3.5 w-3.5 text-(--status-rejected)" />,
+};
+
+export default async function LoggingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ student?: string }>;
+}) {
+  const { student: selectedStudentId } = await searchParams;
+
+  const supabase = await createClient();
+
+  const [
+    { data: students },
+    { data: caseTypes },
+    { data: locations },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name, section")
+      .eq("role", "student")
+      .eq("is_active", true)
+      .order("full_name"),
+    supabase
+      .from("case_types")
+      .select("id, name")
+      .eq("is_active", true)
+      .order("name"),
+    supabase
+      .from("locations")
+      .select("id, name")
+      .eq("is_active", true)
+      .order("name"),
+  ]);
+
+  const studentList = students ?? [];
+  const selectedStudent = selectedStudentId
+    ? studentList.find((s) => s.id === selectedStudentId)
+    : null;
+
+  const { data: uploads } = selectedStudentId
+    ? await supabase
+        .from("uploads")
+        .select("id, file_name, status, uploaded_at")
+        .eq("student_id", selectedStudentId)
+        .order("uploaded_at", { ascending: false })
+    : { data: null };
+
+  const pendingUploads = (uploads ?? []).filter((u) => u.status === "pending");
+  const allUploads = uploads ?? [];
+
   return (
-    <div className="flex items-center justify-center h-64">
-      <p className="text-(--text-muted) text-sm">Case Logging — coming in Phase 5</p>
+    <div className="flex h-full gap-6">
+      {/* Left: Student list */}
+      <aside className="flex w-64 shrink-0 flex-col gap-2 overflow-y-auto">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-(--text-secondary)">
+          Students
+        </h2>
+        {studentList.length === 0 ? (
+          <p className="text-xs text-(--text-muted)">No active students.</p>
+        ) : (
+          studentList.map((s) => (
+            <a
+              key={s.id}
+              href={`/admin/logging?student=${s.id}`}
+              className={`rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                s.id === selectedStudentId
+                  ? "bg-accent text-black font-semibold"
+                  : "bg-surface text-foreground hover:bg-elevated"
+              }`}
+            >
+              <p className="font-medium truncate">{s.full_name}</p>
+              {s.section && (
+                <p className={`text-xs truncate ${s.id === selectedStudentId ? "text-black/70" : "text-(--text-muted)"}`}>
+                  {s.section}
+                </p>
+              )}
+            </a>
+          ))
+        )}
+      </aside>
+
+      {/* Right: Detail panel */}
+      <div className="flex-1 overflow-y-auto">
+        {!selectedStudent ? (
+          <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border">
+            <p className="text-sm text-(--text-muted)">
+              Select a student to begin logging
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-xl font-bold text-foreground">
+                {selectedStudent.full_name}
+              </h1>
+              {selectedStudent.section && (
+                <p className="text-sm text-(--text-secondary)">
+                  Section {selectedStudent.section}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {/* Uploads panel */}
+              <section>
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-(--text-secondary)">
+                  Uploaded Proofs
+                </h2>
+                {allUploads.length === 0 ? (
+                  <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-12">
+                    <p className="text-xs text-(--text-muted)">No uploads yet</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {allUploads.map((u) => (
+                      <li
+                        key={u.id}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {u.file_name}
+                          </p>
+                          <p className="text-xs text-(--text-muted)">
+                            {format(new Date(u.uploaded_at), "MMM d, yyyy · h:mm a")}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="flex items-center gap-1 text-xs capitalize text-(--text-secondary)">
+                            {STATUS_ICON[u.status as keyof typeof STATUS_ICON]}
+                            {u.status}
+                          </span>
+                          {u.status === "pending" && (
+                            <form action={rejectUpload}>
+                              <input type="hidden" name="upload_id" value={u.id} />
+                              <SubmitButton variant="danger" label="Reject" />
+                            </form>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              {/* Log form */}
+              <section>
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-(--text-secondary)">
+                  Log a Case
+                </h2>
+                <div className="rounded-xl border border-border bg-surface p-5">
+                  <LogCaseForm
+                    studentId={selectedStudentId!}
+                    caseTypes={caseTypes ?? []}
+                    locations={locations ?? []}
+                    uploads={pendingUploads}
+                  />
+                </div>
+              </section>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

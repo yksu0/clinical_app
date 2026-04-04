@@ -79,13 +79,13 @@
 
 ## Phase 5: Admin — Case Logging
 
-- [ ] Case logging page — select student
-- [ ] Display student's uploaded proofs (sorted by date)
-- [ ] Log case form: case type dropdown, location dropdown, date picker, notes
-- [ ] On save: create case_log record, update upload status to "processed"
-- [ ] Duplicate prevention (same student + date + case type)
-- [ ] Create audit log entry on case log creation
-- [ ] Bulk approve uploads
+- [x] Case logging page — select student
+- [x] Display student's uploaded proofs (sorted by date)
+- [x] Log case form: case type dropdown, location dropdown, date picker, notes
+- [x] On save: create case_log record, update upload status to "processed"
+- [x] Duplicate prevention (same student + date + case type)
+- [x] Create audit log entry on case log creation
+- [x] Bulk approve uploads
 
 ---
 
