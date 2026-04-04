@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import AnnouncementsFeed from "@/components/shared/AnnouncementsFeed";
 
 export default async function StudentDashboardPage() {
   const supabase = await createClient();
@@ -10,7 +11,7 @@ export default async function StudentDashboardPage() {
   if (!user) redirect("/login");
 
   // Fetch everything in parallel
-  const [caseTypesRes, requirementsRes, caseLogsRes, uploadsRes, assignmentsRes] =
+  const [caseTypesRes, requirementsRes, caseLogsRes, uploadsRes, assignmentsRes, announcementsRes] =
     await Promise.all([
       supabase.from("case_types").select("id, name").eq("is_active", true),
       supabase.from("requirements").select("case_type_id, required_count"),
@@ -26,6 +27,11 @@ export default async function StudentDashboardPage() {
         .from("assignments")
         .select("id, status")
         .eq("student_id", user.id),
+      supabase
+        .from("announcements")
+        .select("id, title, content, created_at, profiles(full_name)")
+        .order("created_at", { ascending: false })
+        .limit(5),
     ]);
 
   const caseTypes = caseTypesRes.data ?? [];
@@ -33,6 +39,7 @@ export default async function StudentDashboardPage() {
   const caseLogs = caseLogsRes.data ?? [];
   const uploads = uploadsRes.data ?? [];
   const assignments = assignmentsRes.data ?? [];
+  const announcements = (announcementsRes.data ?? []) as unknown as Parameters<typeof AnnouncementsFeed>[0]["announcements"];
 
   // Build requirement map: case_type_id → required_count
   const reqMap: Record<string, number> = {};
@@ -166,6 +173,14 @@ export default async function StudentDashboardPage() {
           ))}
         </div>
       )}
+
+      {/* Announcements */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-white/80 uppercase tracking-wider">
+          Announcements
+        </h2>
+        <AnnouncementsFeed announcements={announcements} />
+      </div>
     </div>
   );
 }

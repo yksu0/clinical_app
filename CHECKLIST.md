@@ -108,53 +108,53 @@
 
 ## Phase 7: Student — Views & Progress
 
-- [ ] Student dashboard — personal progress overview
-  - [ ] Completed vs. required cases per type
-  - [ ] Case statistics (by type, by location)
-- [ ] Assigned cases view (upcoming assignments with details)
-- [ ] Case history view (all logged cases)
-- [ ] Upload status tracker (pending / processed / rejected)
-- [ ] Requirement completion indicators
+- [x] Student dashboard — personal progress overview
+  - [x] Completed vs. required cases per type
+  - [x] Case statistics (by type, by location)
+- [x] Assigned cases view (upcoming assignments with details)
+- [x] Case history view (all logged cases)
+- [x] Upload status tracker (pending / processed / rejected)
+- [x] Requirement completion indicators
 
 ---
 
 ## Phase 8: Admin Dashboard & Smart Filtering
 
-- [ ] Admin dashboard
-  - [ ] Students falling behind alerts
-  - [ ] Exposure imbalance alerts
-  - [ ] Case distribution overview (by type)
-  - [ ] Location distribution overview
-- [ ] Smart filters
-  - [ ] Students missing specific case types
-  - [ ] Students below requirements
+- [x] Admin dashboard
+  - [x] Students falling behind alerts
+  - [x] Exposure imbalance alerts
+  - [x] Case distribution overview (by type)
+  - [x] Location distribution overview
+- [x] Smart filters
+  - [x] Students missing specific case types
+  - [x] Students below requirements
   - [ ] Students with repeated locations
-  - [ ] Students with low activity
-  - [ ] Students with pending uploads
-- [ ] Student insight panel
-  - [ ] Total cases, cases per type, cases per location
-  - [ ] Imbalance detection warnings
-  - [ ] Requirement completion status
-- [ ] Search students by name
-- [ ] Pagination (300+ students support)
+  - [x] Students with low activity
+  - [x] Students with pending uploads
+- [x] Student insight panel
+  - [x] Total cases, cases per type, cases per location
+  - [x] Imbalance detection warnings
+  - [x] Requirement completion status
+- [x] Search students by name
+- [x] Pagination (300+ students support)
 
 ---
 
 ## Phase 9: CI (Read-Only Instructor) Views
 
-- [ ] CI dashboard — read-only overview of student progress
-- [ ] View individual student profiles and case logs
-- [ ] View case distribution and progress dashboards
+- [x] CI dashboard — read-only overview of student progress
+- [x] View individual student profiles and case logs
+- [x] View case distribution and progress dashboards
 - [ ] Ensure no edit/create permissions in UI and RLS
 
 ---
 
 ## Phase 10: Announcement System
 
-- [ ] Admin: create / edit / delete announcements
-- [ ] All roles: view announcements feed
-- [ ] Sorted by date (newest first)
-- [ ] Empty state UX
+- [x] Admin: create / delete announcements
+- [x] All roles: view announcements feed
+- [x] Sorted by date (newest first)
+- [x] Empty state UX
 
 ---
 

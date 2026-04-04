@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { logout } from "@/lib/actions/auth";
+import CINav from "@/components/ci/CINav";
 
 export default async function CILayout({
   children,
@@ -27,25 +27,9 @@ export default async function CILayout({
   const displayName = profile?.full_name ?? user.email ?? "Instructor";
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-surface px-6">
-        <span className="text-sm font-semibold text-foreground">Clinical Cases</span>
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="text-sm font-medium text-foreground">{displayName}</p>
-            <p className="text-xs text-(--text-muted) capitalize">{role}</p>
-          </div>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-xs font-bold text-black">
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-          <form action={logout}>
-            <button className="text-xs text-(--text-secondary) hover:text-foreground transition-colors">
-              Sign out
-            </button>
-          </form>
-        </div>
-      </header>
-      <main className="flex-1 overflow-y-auto p-6">{children}</main>
+    <div className="flex h-screen overflow-hidden bg-background">
+      <CINav displayName={displayName} role={role} />
+      <main className="flex-1 overflow-y-auto">{children}</main>
     </div>
   );
 }
