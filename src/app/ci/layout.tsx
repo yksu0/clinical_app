@@ -29,7 +29,7 @@ export default async function CILayout({
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <CINav displayName={displayName} role={role} />
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 min-w-0">{children}</main>
     </div>
   );
 }

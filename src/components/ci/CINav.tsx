@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Users,
   ClipboardList,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 import { logout } from "@/lib/actions/auth";
 
@@ -16,12 +19,16 @@ const NAV = [
   { href: "/ci/cases", label: "Case Logs", icon: ClipboardList },
 ];
 
-export default function CINav({
+function CINavContent({
   displayName,
   role,
+  onNav,
+  onClose,
 }: {
   displayName: string;
   role: string;
+  onNav?: () => void;
+  onClose?: () => void;
 }) {
   const pathname = usePathname();
 
@@ -30,18 +37,7 @@ export default function CINav({
   }
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-surface">
-      {/* Brand */}
-      <div className="flex h-16 items-center gap-2.5 border-b border-border px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent">
-          <ClipboardList className="h-4 w-4 text-black" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-foreground">Clinical Cases</p>
-          <p className="text-xs text-white/40 capitalize">{role} view</p>
-        </div>
-      </div>
-
+    <>
       {/* Nav */}
       <nav className="flex flex-1 flex-col gap-0.5 px-3 py-4">
         {NAV.map((item) => {
@@ -51,6 +47,7 @@ export default function CINav({
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNav}
               className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
                 active
                   ? "bg-accent/15 text-accent"
@@ -87,6 +84,92 @@ export default function CINav({
           </form>
         </div>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export default function CINav({
+  displayName,
+  role,
+}: {
+  displayName: string;
+  role: string;
+}) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  const brand = (
+    <div className="flex h-16 items-center gap-2.5 border-b border-border px-5">
+      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent">
+        <ClipboardList className="h-4 w-4 text-black" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-foreground">Clinical Cases</p>
+        <p className="text-xs text-white/40 capitalize">{role} view</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-surface">
+        {brand}
+        <CINavContent displayName={displayName} role={role} />
+      </aside>
+
+      {/* Mobile overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-surface transition-transform duration-200 md:hidden ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex h-16 items-center justify-between border-b border-border px-5">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent">
+              <ClipboardList className="h-4 w-4 text-black" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Clinical Cases</p>
+              <p className="text-xs text-white/40 capitalize">{role} view</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setOpen(false)}
+            className="text-white/40 hover:text-white transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <CINavContent
+          displayName={displayName}
+          role={role}
+          onNav={() => setOpen(false)}
+        />
+      </aside>
+
+      {/* Mobile FAB trigger */}
+      <div className="fixed bottom-4 left-4 z-30 md:hidden">
+        <button
+          onClick={() => setOpen(true)}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-black shadow-lg"
+          aria-label="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      </div>
+    </>
   );
 }

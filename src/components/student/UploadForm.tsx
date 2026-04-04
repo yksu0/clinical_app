@@ -106,7 +106,7 @@ export default function UploadForm() {
 
       if (storageErr) throw new Error(storageErr.message);
 
-      await createUploadRecord(path, file.name);
+      await createUploadRecord(path, file.name, file.type, file.size);
 
       setStatus("success");
       setFile(null);

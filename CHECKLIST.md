@@ -185,10 +185,10 @@
 ## Phase 14: Polish & Production Readiness
 
 ### UI / UX
-- [ ] Mobile responsive layout (especially student upload flow)
+- [x] Mobile responsive layout (especially student upload flow)
 - [ ] Empty state messages across all pages
-- [ ] Loading states and skeletons
-- [ ] Error handling with clear user feedback (toast / alert)
+- [x] Loading states and skeletons
+- [x] Error handling with clear user feedback (toast / alert)
 - [ ] Role-based UI restrictions (hide inaccessible features)
 
 ### Performance
@@ -198,7 +198,7 @@
 
 ### Security
 - [ ] Verify all RLS policies lock down data per role
-- [ ] Validate file uploads server-side (type, size)
+- [x] Validate file uploads server-side (type, size)
 - [ ] Sanitize all user inputs
 - [ ] Ensure service role key is never exposed to client
 
