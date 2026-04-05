@@ -18,6 +18,7 @@ export default async function FeedLayout({
 
   const role = (user.app_metadata?.role as string) ?? "student";
 
+  // Profile query only if needed for display name — runs after auth check
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name")

@@ -1,14 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 
 const PUBLIC_ROUTES = ["/login", "/signup", "/auth/callback"];
 
 export async function proxy(request: NextRequest) {
-  const response = await updateSession(request);
   const { pathname } = request.nextUrl;
-
   const isPublic = PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
+
+  // Single Supabase client that both refreshes the session and does auth checks
+  let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,11 +22,16 @@ export async function proxy(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
         },
       },
     }
   );
 
+  // Single getUser() call — refreshes session + gives us the user
   const {
     data: { user },
   } = await supabase.auth.getUser();

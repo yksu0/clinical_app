@@ -66,27 +66,25 @@ export default async function AuditPage({ searchParams }: PageProps) {
   const from = (page - 1) * PAGE_SIZE;
   query = query.range(from, from + PAGE_SIZE - 1);
 
-  const { data, count } = await query;
-  const logs = (data ?? []) as unknown as AuditLog[];
-  const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
+  // Run all three queries in parallel
+  const [mainResult, actionTypesResult, performersResult] = await Promise.all([
+    query,
+    supabase.from("audit_logs").select("action_type"),
+    supabase.from("audit_logs").select("performed_by, profiles(full_name, email)"),
+  ]);
 
-  // Distinct action types for filter dropdown
-  const { data: actionTypesData } = await supabase
-    .from("audit_logs")
-    .select("action_type");
+  const logs = (mainResult.data ?? []) as unknown as AuditLog[];
+  const totalPages = Math.max(1, Math.ceil((mainResult.count ?? 0) / PAGE_SIZE));
+
   const actionTypes = [
-    ...new Set((actionTypesData ?? []).map((r) => r.action_type as string)),
+    ...new Set((actionTypesResult.data ?? []).map((r) => r.action_type as string)),
   ].sort();
 
-  // Distinct performers for filter dropdown
-  const { data: performersData } = await supabase
-    .from("audit_logs")
-    .select("performed_by, profiles(full_name, email)");
   type Performer = {
     performed_by: string;
     profiles: { full_name: string; email: string } | null;
   };
-  const performers = (performersData ?? []) as unknown as Performer[];
+  const performers = (performersResult.data ?? []) as unknown as Performer[];
   const uniquePerformers = performers.filter(
     (p, i, arr) => arr.findIndex((x) => x.performed_by === p.performed_by) === i
   );
@@ -111,7 +109,7 @@ export default async function AuditPage({ searchParams }: PageProps) {
       <div>
         <h1 className="text-2xl font-bold text-white">Audit Logs</h1>
         <p className="text-sm text-white/50 mt-1">
-          {count ?? 0} total records
+          {mainResult.count ?? 0} total records
         </p>
       </div>
 
@@ -239,7 +237,7 @@ export default async function AuditPage({ searchParams }: PageProps) {
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm text-white/50">
           <span>
-            Page {page} of {totalPages} ({count} total)
+            Page {page} of {totalPages} ({mainResult.count} total)
           </span>
           <div className="flex gap-2">
             {page > 1 && (

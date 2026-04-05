@@ -22,41 +22,33 @@ export default async function FeedPage() {
 
   const role = (user.app_metadata?.role as string) ?? "student";
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .single();
-
-  const displayName = profile?.full_name ?? "there";
-
-  // Fetch announcements with comments and author
-  const { data } = await supabase
-    .from("announcements")
-    .select(`
-      id,
-      title,
-      content,
-      created_at,
-      image_url,
-      profiles(full_name),
-      announcement_comments(
+  // Run ALL queries in parallel — no sequential waits
+  const [profileRes, announcementsRes, studentsRes, casesRes] = await Promise.all([
+    supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+    supabase
+      .from("announcements")
+      .select(`
         id,
+        title,
         content,
         created_at,
-        user_id,
-        profiles(full_name)
-      )
-    `)
-    .order("created_at", { ascending: false });
-
-  const announcements = (data ?? []) as unknown as Announcement[];
-
-  // Quick stats for hero
-  const [studentsRes, casesRes] = await Promise.all([
+        image_url,
+        profiles(full_name),
+        announcement_comments(
+          id,
+          content,
+          created_at,
+          user_id,
+          profiles(full_name)
+        )
+      `)
+      .order("created_at", { ascending: false }),
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "student"),
     supabase.from("case_logs").select("id", { count: "exact", head: true }),
   ]);
+
+  const displayName = profileRes.data?.full_name ?? "there";
+  const announcements = (announcementsRes.data ?? []) as unknown as Announcement[];
   const totalStudents = studentsRes.count ?? 0;
   const totalCases = casesRes.count ?? 0;
   const totalAnnouncements = announcements.length;
