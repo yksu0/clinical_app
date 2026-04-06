@@ -1,11 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import {
-  addToRoster,
   verifyStudent,
   toggleStudentActive,
   removeFromRoster,
 } from "./actions";
 import SubmitButton from "@/components/ui/SubmitButton";
+import BulkAddForm from "./BulkAddForm";
 
 export default async function RosterPage() {
   const supabase = await createClient();
@@ -126,34 +126,8 @@ export default async function RosterPage() {
           Pre-Registration Whitelist ({rosterItems.length})
         </h2>
 
-        {/* Add form */}
-        <form
-          action={addToRoster}
-          className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-border bg-surface p-4 sm:grid-cols-3"
-        >
-          <input
-            name="full_name"
-            type="text"
-            required
-            placeholder="Full name *"
-            className="rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground placeholder-(--text-muted) outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-          />
-          <input
-            name="email"
-            type="email"
-            placeholder="Email (optional)"
-            className="rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground placeholder-(--text-muted) outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-          />
-          <div className="flex gap-2">
-            <input
-              name="section"
-              type="text"
-              placeholder="Section (optional)"
-              className="flex-1 rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground placeholder-(--text-muted) outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-            />
-            <SubmitButton label="Add" loadingLabel="…" />
-          </div>
-        </form>
+        {/* Add form — single or bulk */}
+        <BulkAddForm />
 
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
           {rosterItems.length === 0 ? (

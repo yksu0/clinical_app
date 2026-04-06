@@ -1,7 +1,61 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+
+/** Levenshtein distance between two strings (optimised two-row approach) */
+function levenshtein(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  let curr = new Array<number>(n + 1).fill(0);
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      curr[j] =
+        a[i - 1] === b[j - 1]
+          ? prev[j - 1]
+          : 1 + Math.min(prev[j - 1], prev[j], curr[j - 1]);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[n];
+}
+
+/**
+ * Called client-side on the signup form to surface "did you mean?" suggestions.
+ * Returns up to 3 similar names from the roster; empty array if the input
+ * already matches exactly or is too short.
+ */
+export async function findSimilarNames(rawInput: string): Promise<string[]> {
+  const input = rawInput.trim();
+  if (input.length < 3) return [];
+
+  const supabase = await createClient();
+
+  // If the name already matches exactly there is nothing to suggest
+  const { data: exact } = await supabase
+    .from("student_roster")
+    .select("id")
+    .ilike("full_name", input)
+    .maybeSingle();
+  if (exact) return [];
+
+  const { data: all } = await supabase.from("student_roster").select("full_name");
+  if (!all || all.length === 0) return [];
+
+  const normalized = input.toLowerCase();
+  // Allow up to 25 % of characters to differ, min 1, max 3
+  const threshold = Math.max(1, Math.min(3, Math.floor(normalized.length * 0.25)));
+
+  return all
+    .map((r) => ({ name: r.full_name, dist: levenshtein(normalized, r.full_name.toLowerCase()) }))
+    .filter((r) => r.dist <= threshold)
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, 3)
+    .map((r) => r.name);
+}
 
 export async function login(formData: FormData) {
   const email = formData.get("email") as string;
@@ -23,23 +77,34 @@ export async function signup(formData: FormData) {
   const password = formData.get("password") as string;
 
   const supabase = await createClient();
+  const trimmedName = fullName?.trim();
+
+  if (!trimmedName) {
+    redirect("/signup?error=name_not_found");
+  }
 
   // Verify the name exists in the pre-registered roster (case-insensitive)
-  const { data: rosterEntry } = await supabase
+  const { data: rosterRows } = await supabase
     .from("student_roster")
     .select("id")
-    .ilike("full_name", fullName.trim())
-    .maybeSingle();
+    .ilike("full_name", trimmedName)
+    .limit(1);
+
+  const rosterEntry = rosterRows?.[0] ?? null;
 
   if (!rosterEntry) {
     redirect("/signup?error=name_not_found");
   }
 
+  const headersList = await headers();
+  const origin = headersList.get("origin") ?? "http://localhost:3000";
+
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { full_name: fullName, roster_id: rosterEntry.id },
+      data: { full_name: trimmedName, roster_id: rosterEntry.id },
+      emailRedirectTo: `${origin}/auth/callback`,
     },
   });
 

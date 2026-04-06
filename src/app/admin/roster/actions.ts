@@ -3,6 +3,45 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
+export type BulkResult = { added: number; skipped: number };
+
+/** Bulk-insert multiple students from a pasted list into the whitelist */
+export async function bulkAddToRoster(
+  _prev: BulkResult | null,
+  formData: FormData,
+): Promise<BulkResult> {
+  const raw = formData.get("names") as string;
+  if (!raw?.trim()) return { added: 0, skipped: 0 };
+
+  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+  const parsed: { full_name: string; email: string | null; section: string | null }[] = [];
+
+  for (const line of lines) {
+    const parts = line.split("|").map((p) => p.trim());
+    const fullName = parts[0];
+    if (!fullName) continue;
+    const email = parts[1]?.toLowerCase() || null;
+    const section = parts[2] || null;
+    parsed.push({ full_name: fullName, email, section });
+  }
+
+  if (parsed.length === 0) return { added: 0, skipped: 0 };
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase.from("student_roster").select("full_name");
+  const existingLower = new Set((existing ?? []).map((r) => r.full_name.toLowerCase()));
+
+  const toInsert = parsed.filter((p) => !existingLower.has(p.full_name.toLowerCase()));
+  const skipped = parsed.length - toInsert.length;
+
+  if (toInsert.length > 0) {
+    await supabase.from("student_roster").insert(toInsert);
+  }
+
+  revalidatePath("/admin/roster");
+  return { added: toInsert.length, skipped };
+}
+
 /** Add a student to the pre-registration whitelist */
 export async function addToRoster(formData: FormData) {
   const fullName = (formData.get("full_name") as string).trim();

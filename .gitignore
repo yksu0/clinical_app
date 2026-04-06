@@ -43,3 +43,5 @@ next-env.d.ts
 #checklists
 AGENTS.MD
 CLAUDE.MD
+optimization.md
+opti_tools.md
