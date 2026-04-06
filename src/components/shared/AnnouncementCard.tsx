@@ -49,7 +49,7 @@ function CommentItem({
           <p className="text-xs font-semibold text-foreground mb-0.5">
             {comment.profiles?.full_name ?? "Unknown"}
           </p>
-          <p className="text-xs text-(--text-secondary) break-words">{comment.content}</p>
+          <p className="text-xs text-(--text-secondary) wrap-break-word">{comment.content}</p>
         </div>
         <p className="mt-0.5 text-[10px] text-(--text-muted) px-1">
           {new Date(comment.created_at).toLocaleDateString("en-AU", {
