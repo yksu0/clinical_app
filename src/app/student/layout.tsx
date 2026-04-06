@@ -20,9 +20,12 @@ export default async function StudentLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name")
+    .select("full_name, is_verified")
     .eq("id", user.id)
     .single();
+
+  // Block unverified students — admin must approve their account first
+  if (!profile?.is_verified) redirect("/pending");
 
   const displayName = profile?.full_name ?? user.email ?? "Student";
 

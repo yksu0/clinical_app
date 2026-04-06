@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 /** Levenshtein distance between two strings (optimised two-row approach) */
 function levenshtein(a: string, b: string): number {
@@ -99,7 +100,7 @@ export async function signup(formData: FormData) {
   const headersList = await headers();
   const origin = headersList.get("origin") ?? "http://localhost:3000";
 
-  const { error } = await supabase.auth.signUp({
+  const { data: signUpData, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -110,6 +111,23 @@ export async function signup(formData: FormData) {
 
   if (error) {
     redirect("/signup?error=signup_failed");
+  }
+
+  // Explicitly upsert profile in case the DB trigger fails silently
+  if (signUpData.user) {
+    const serviceClient = createServiceClient();
+    await serviceClient.from("profiles").upsert(
+      {
+        id: signUpData.user.id,
+        full_name: trimmedName,
+        email: email.toLowerCase().trim(),
+        roster_id: rosterEntry.id,
+        role: "student",
+        is_verified: false,
+        is_active: true,
+      },
+      { onConflict: "id" },
+    );
   }
 
   // Account created — pending admin verification
