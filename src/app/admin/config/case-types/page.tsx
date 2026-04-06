@@ -13,7 +13,7 @@ export default async function CaseTypesPage() {
   const items = (caseTypes ?? []) as CaseType[];
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-3xl">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-foreground">Case Types</h1>
         <p className="mt-1 text-sm text-(--text-secondary)">

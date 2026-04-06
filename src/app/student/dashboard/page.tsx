@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import AnnouncementsFeed from "@/components/shared/AnnouncementsFeed";
+import { ClipboardList, Target, Upload, CalendarClock, MapPin, TrendingUp } from "lucide-react";
 
 export default async function StudentDashboardPage() {
   const supabase = await createClient();
@@ -75,7 +76,7 @@ export default async function StudentDashboardPage() {
       : 0;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">My Progress</h1>
@@ -86,18 +87,21 @@ export default async function StudentDashboardPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <SummaryCard label="Cases Completed" value={totalCompleted} />
-        <SummaryCard label="Cases Required" value={totalRequired} />
-        <SummaryCard label="Pending Uploads" value={pendingUploads} />
-        <SummaryCard label="Open Assignments" value={pendingAssignments} />
+        <SummaryCard label="Cases Completed" value={totalCompleted} icon={<ClipboardList className="h-5 w-5" />} />
+        <SummaryCard label="Cases Required" value={totalRequired} icon={<Target className="h-5 w-5" />} />
+        <SummaryCard label="Pending Uploads" value={pendingUploads} icon={<Upload className="h-5 w-5" />} />
+        <SummaryCard label="Open Assignments" value={pendingAssignments} icon={<CalendarClock className="h-5 w-5" />} />
       </div>
 
       {/* Overall Progress */}
       <div className="bg-white/5 border border-white/10 rounded-xl p-6">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-white/80">
-            Overall Completion
-          </span>
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-accent" />
+            <span className="text-sm font-medium text-white/80">
+              Overall Completion
+            </span>
+          </div>
           <span className="text-sm font-bold text-accent">
             {totalCompleted} / {totalRequired}
           </span>
@@ -150,15 +154,18 @@ export default async function StudentDashboardPage() {
       {/* Location Distribution */}
       {locationEntries.length > 0 && (
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-white/80 uppercase tracking-wider">
-            Cases by Location
-          </h2>
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-accent" />
+            <h2 className="text-sm font-semibold text-white/80 uppercase tracking-wider">
+              Cases by Location
+            </h2>
+          </div>
           {locationEntries.map(([loc, count]) => (
             <div key={loc} className="flex items-center gap-3">
               <span className="text-sm text-white/70 w-40 truncate">{loc}</span>
-              <div className="flex-1 bg-white/10 rounded-full h-2">
+              <div className="flex-1 bg-white/10 rounded-full h-3">
                 <div
-                  className="h-2 rounded-full bg-accent/70"
+                  className="h-3 rounded-full bg-accent/70 transition-all"
                   style={{
                     width: `${Math.round(
                       (count / caseLogs.length) * 100
@@ -166,7 +173,7 @@ export default async function StudentDashboardPage() {
                   }}
                 />
               </div>
-              <span className="text-xs text-white/50 w-8 text-right">
+              <span className="text-xs font-medium text-white/50 w-8 text-right">
                 {count}
               </span>
             </div>
@@ -185,20 +192,25 @@ export default async function StudentDashboardPage() {
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: number }) {
+function SummaryCard({ label, value, icon }: { label: string; value: number; icon?: React.ReactNode }) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-      <p className="text-2xl font-bold text-accent">{value}</p>
-      <p className="text-xs text-white/50 mt-1">{label}</p>
+    <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-white/50">
+          {icon}
+        </div>
+        <p className="text-3xl font-bold text-accent">{value}</p>
+      </div>
+      <p className="text-xs font-medium text-white/50">{label}</p>
     </div>
   );
 }
 
 function ProgressBar({ pct, met }: { pct: number; met?: boolean }) {
   return (
-    <div className="w-full bg-white/10 rounded-full h-2.5">
+    <div className="w-full bg-white/10 rounded-full h-3.5">
       <div
-        className={`h-2.5 rounded-full transition-all ${
+        className={`h-3.5 rounded-full transition-all ${
           met ? "bg-green-500" : "bg-accent"
         }`}
         style={{ width: `${pct}%` }}

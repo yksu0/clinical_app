@@ -40,7 +40,7 @@ export default async function UploadPage() {
   const list = uploads ?? [];
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8">
       <div>
         <h1 className="text-xl font-bold text-foreground">Upload Case Proof</h1>
         <p className="mt-1 text-sm text-(--text-secondary)">

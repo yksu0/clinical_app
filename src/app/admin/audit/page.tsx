@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 
 const PAGE_SIZE = 50;
@@ -34,14 +33,6 @@ const ACTION_STYLES: Record<string, string> = {
 
 export default async function AuditPage({ searchParams }: PageProps) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const role = (user.app_metadata?.role as string) ?? "student";
-  if (role !== "admin") redirect("/");
-
   const params = await searchParams;
   const actionFilter = params.action ?? "";
   const userFilter = params.user ?? "";

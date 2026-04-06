@@ -27,7 +27,7 @@ export default async function RosterPage() {
   const activeStudents = studentProfiles.filter((s) => s.is_verified);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8">
       <div>
         <h1 className="text-xl font-bold text-foreground">Student Roster</h1>
         <p className="mt-1 text-sm text-(--text-secondary)">

@@ -1,13 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { Users, ClipboardList, CalendarClock, AlertTriangle, BarChart3, MapPin } from "lucide-react";
 
 export default async function CIDashboard() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
 
   const [
     profilesRes,
@@ -91,7 +87,7 @@ export default async function CIDashboard() {
   ).length;
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white">Overview</h1>
         <p className="text-sm text-white/50 mt-1">Read-only view of student progress.</p>
@@ -99,10 +95,10 @@ export default async function CIDashboard() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Students" value={profiles.length} />
-        <StatCard label="Cases Logged" value={allLogs.length} />
-        <StatCard label="Open Assignments" value={openAssignments} />
-        <StatCard label="Students Behind" value={behind} highlight={behind > 0} />
+        <StatCard label="Students" value={profiles.length} icon={<Users className="h-5 w-5" />} />
+        <StatCard label="Cases Logged" value={allLogs.length} icon={<ClipboardList className="h-5 w-5" />} />
+        <StatCard label="Open Assignments" value={openAssignments} icon={<CalendarClock className="h-5 w-5" />} />
+        <StatCard label="Students Behind" value={behind} highlight={behind > 0} icon={<AlertTriangle className="h-5 w-5" />} />
       </div>
 
       {/* Student Progress List */}
@@ -123,12 +119,12 @@ export default async function CIDashboard() {
           <div className="divide-y divide-white/5">
             {studentStats
               .sort((a, b) => a.pct - b.pct)
-              .slice(0, 30)
+              .slice(0, 50)
               .map((s) => (
                 <Link
                   key={s.id}
                   href={`/ci/students/${s.id}`}
-                  className="grid grid-cols-[1fr_60px_90px] items-center gap-2 px-4 py-3 text-sm hover:bg-white/5 transition-colors"
+                  className="grid grid-cols-[1fr_60px_90px] items-center gap-2 px-4 py-3 text-sm hover:bg-white/8 transition-colors"
                 >
                   <span>
                     <p className="font-medium text-white">{s.full_name}</p>
@@ -152,7 +148,7 @@ export default async function CIDashboard() {
               ))}
           </div>
         )}
-        {studentStats.length > 30 && (
+        {studentStats.length > 50 && (
           <div className="border-t border-white/10 px-4 py-3 text-center">
             <Link href="/ci/students" className="text-xs text-accent hover:underline">
               View all {studentStats.length} students →
@@ -164,9 +160,12 @@ export default async function CIDashboard() {
       {/* Distribution Charts */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50">
-            Cases by Type
-          </h2>
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-accent" />
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50">
+              Cases by Type
+            </h2>
+          </div>
           {caseTypes.length === 0 ? (
             <p className="text-xs text-white/30">No data.</p>
           ) : (
@@ -181,13 +180,13 @@ export default async function CIDashboard() {
                   <span className="w-32 shrink-0 truncate text-xs text-white/70">
                     {ct.name}
                   </span>
-                  <div className="flex-1 rounded-full bg-white/10 h-2">
+                  <div className="flex-1 rounded-full bg-white/10 h-3">
                     <div
-                      className="h-2 rounded-full bg-accent/70"
+                      className="h-3 rounded-full bg-accent/70 transition-all"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="w-8 text-right text-xs text-white/40">{count}</span>
+                  <span className="w-12 text-right text-xs font-medium text-white/50">{count} <span className="text-white/30">({pct}%)</span></span>
                 </div>
               );
             })
@@ -195,9 +194,12 @@ export default async function CIDashboard() {
         </div>
 
         <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50">
-            Top Locations
-          </h2>
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-accent" />
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50">
+              Top Locations
+            </h2>
+          </div>
           {topLocations.length === 0 ? (
             <p className="text-xs text-white/30">No data.</p>
           ) : (
@@ -209,13 +211,13 @@ export default async function CIDashboard() {
               return (
                 <div key={loc} className="flex items-center gap-3">
                   <span className="w-32 shrink-0 truncate text-xs text-white/70">{loc}</span>
-                  <div className="flex-1 rounded-full bg-white/10 h-2">
+                  <div className="flex-1 rounded-full bg-white/10 h-3">
                     <div
-                      className="h-2 rounded-full bg-accent/60"
+                      className="h-3 rounded-full bg-accent/60 transition-all"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="w-8 text-right text-xs text-white/40">{count}</span>
+                  <span className="w-12 text-right text-xs font-medium text-white/50">{count} <span className="text-white/30">({pct}%)</span></span>
                 </div>
               );
             })
@@ -230,21 +232,30 @@ function StatCard({
   label,
   value,
   highlight,
+  icon,
 }: {
   label: string;
   value: number;
   highlight?: boolean;
+  icon?: React.ReactNode;
 }) {
   return (
     <div
-      className={`rounded-xl border p-4 text-center ${
+      className={`rounded-xl border p-5 ${
         highlight ? "border-accent/30 bg-accent/10" : "border-white/10 bg-white/5"
       }`}
     >
-      <p className={`text-2xl font-bold ${highlight ? "text-accent" : "text-white"}`}>
-        {value}
-      </p>
-      <p className="text-xs text-white/50 mt-1">{label}</p>
+      <div className="flex items-center justify-between mb-3">
+        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+          highlight ? "bg-accent/20 text-accent" : "bg-white/10 text-white/50"
+        }`}>
+          {icon}
+        </div>
+        <p className={`text-3xl font-bold ${highlight ? "text-accent" : "text-white"}`}>
+          {value}
+        </p>
+      </div>
+      <p className="text-xs font-medium text-white/50">{label}</p>
     </div>
   );
 }

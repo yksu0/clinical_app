@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -8,10 +8,6 @@ interface PageProps {
 
 export default async function CIStudentProfilePage({ params }: PageProps) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
 
   const { id } = await params;
 
@@ -87,7 +83,7 @@ export default async function CIStudentProfilePage({ params }: PageProps) {
   const typedAssignments = assignments as unknown as AssignmentRow[];
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
       {/* Back */}
       <Link
         href="/ci/students"
@@ -162,9 +158,9 @@ export default async function CIStudentProfilePage({ params }: PageProps) {
                       {done}/{req || "—"}
                     </span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-white/10">
+                  <div className="h-2.5 w-full rounded-full bg-white/10">
                     <div
-                      className={`h-1.5 rounded-full ${met ? "bg-green-500" : "bg-accent"}`}
+                      className={`h-2.5 rounded-full transition-all ${met ? "bg-green-500" : "bg-accent"}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>

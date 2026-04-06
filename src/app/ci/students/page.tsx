@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 interface PageProps {
   searchParams: Promise<{ search?: string }>;
@@ -8,10 +7,6 @@ interface PageProps {
 
 export default async function CIStudentsPage({ searchParams }: PageProps) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
 
   const params = await searchParams;
   const search = params.search ?? "";
@@ -66,7 +61,7 @@ export default async function CIStudentsPage({ searchParams }: PageProps) {
   const sorted = filtered.slice().sort((a, b) => a.pct - b.pct);
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+    <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Students</h1>
         <p className="text-sm text-white/50 mt-1">

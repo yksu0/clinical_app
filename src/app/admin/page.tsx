@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { Users, ClipboardList, Upload, AlertTriangle, MapPin, BarChart3, TrendingUp } from "lucide-react";
 
 const PAGE_SIZE = 25;
 
@@ -38,11 +38,6 @@ type StudentRow = Profile & {
 
 export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
   const params = await searchParams;
   const filter: FilterType = (params.filter as FilterType) ?? "all";
   const search = params.search ?? "";
@@ -260,17 +255,19 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     <div className="flex flex-col gap-6 p-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Active Students" value={totalStudents} />
-        <StatCard label="Cases Logged" value={totalCasesLogged} />
+        <StatCard label="Active Students" value={totalStudents} icon={<Users className="h-5 w-5" />} />
+        <StatCard label="Cases Logged" value={totalCasesLogged} icon={<ClipboardList className="h-5 w-5" />} />
         <StatCard
           label="Pending Uploads"
           value={totalPendingUploads}
           highlight={totalPendingUploads > 0}
+          icon={<Upload className="h-5 w-5" />}
         />
         <StatCard
           label="Students Behind"
           value={studentsBehind}
           highlight={studentsBehind > 0}
+          icon={<AlertTriangle className="h-5 w-5" />}
         />
       </div>
 
@@ -540,9 +537,9 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                             {done}/{req || "—"}
                           </span>
                         </div>
-                        <div className="h-1.5 w-full rounded-full bg-white/10">
+                        <div className="h-2.5 w-full rounded-full bg-white/10">
                           <div
-                            className={`h-1.5 rounded-full ${met ? "bg-green-500" : "bg-accent"}`}
+                            className={`h-2.5 rounded-full transition-all ${met ? "bg-green-500" : "bg-accent"}`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -624,9 +621,12 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Case Type Distribution */}
           <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50">
-              Cases by Type
-            </h2>
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-accent" />
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50">
+                Cases by Type
+              </h2>
+            </div>
             {caseTypes.length === 0 ? (
               <p className="text-xs text-white/30">No data.</p>
             ) : (
@@ -641,14 +641,14 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                     <span className="w-32 shrink-0 truncate text-xs text-white/70">
                       {ct.name}
                     </span>
-                    <div className="flex-1 rounded-full bg-white/10 h-2">
+                    <div className="flex-1 rounded-full bg-white/10 h-3">
                       <div
-                        className="h-2 rounded-full bg-accent/70"
+                        className="h-3 rounded-full bg-accent/70 transition-all"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="w-8 text-right text-xs text-white/40">
-                      {count}
+                    <span className="w-12 text-right text-xs font-medium text-white/50">
+                      {count} <span className="text-white/30">({pct}%)</span>
                     </span>
                   </div>
                 );
@@ -658,9 +658,12 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
           {/* Location Distribution */}
           <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50">
-              Top Locations
-            </h2>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-accent" />
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50">
+                Top Locations
+              </h2>
+            </div>
             {locationEntries.length === 0 ? (
               <p className="text-xs text-white/30">No data.</p>
             ) : (
@@ -674,14 +677,14 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                     <span className="w-32 shrink-0 truncate text-xs text-white/70">
                       {loc}
                     </span>
-                    <div className="flex-1 rounded-full bg-white/10 h-2">
+                    <div className="flex-1 rounded-full bg-white/10 h-3">
                       <div
-                        className="h-2 rounded-full bg-accent/60"
+                        className="h-3 rounded-full bg-accent/60 transition-all"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="w-8 text-right text-xs text-white/40">
-                      {count}
+                    <span className="w-12 text-right text-xs font-medium text-white/50">
+                      {count} <span className="text-white/30">({pct}%)</span>
                     </span>
                   </div>
                 );
@@ -698,25 +701,34 @@ function StatCard({
   label,
   value,
   highlight,
+  icon,
 }: {
   label: string;
   value: number;
   highlight?: boolean;
+  icon?: React.ReactNode;
 }) {
   return (
     <div
-      className={`rounded-xl border p-4 text-center ${
+      className={`rounded-xl border p-5 ${
         highlight
           ? "border-accent/30 bg-accent/10"
           : "border-white/10 bg-white/5"
       }`}
     >
-      <p
-        className={`text-2xl font-bold ${highlight ? "text-accent" : "text-white"}`}
-      >
-        {value}
-      </p>
-      <p className="text-xs text-white/50 mt-1">{label}</p>
+      <div className="flex items-center justify-between mb-3">
+        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+          highlight ? "bg-accent/20 text-accent" : "bg-white/10 text-white/50"
+        }`}>
+          {icon}
+        </div>
+        <p
+          className={`text-3xl font-bold ${highlight ? "text-accent" : "text-white"}`}
+        >
+          {value}
+        </p>
+      </div>
+      <p className="text-xs font-medium text-white/50">{label}</p>
     </div>
   );
 }

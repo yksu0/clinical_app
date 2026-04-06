@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import AnnouncementForm from "./AnnouncementForm";
 import { deleteAnnouncement } from "./actions";
 
@@ -11,11 +10,6 @@ export default async function AnnouncementsPage({
   const { error, toast } = await searchParams;
   const success = toast === "success";
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
   const { data, error: queryError } = await supabase
     .from("announcements")
     .select("id, title, content, created_at, image_url, profiles(full_name)")
@@ -35,7 +29,7 @@ export default async function AnnouncementsPage({
   const announcements = (data ?? []) as unknown as Announcement[];
 
   return (
-    <div className="flex gap-8 p-6 max-w-5xl">
+    <div className="flex gap-8 p-6 max-w-6xl">
       {/* Left: Post Form */}
       <aside className="w-80 shrink-0">
         <div className="sticky top-6 rounded-xl border border-white/10 bg-white/5 p-5">
