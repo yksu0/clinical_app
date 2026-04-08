@@ -27,7 +27,7 @@ export default async function CIStudentProfilePage({ params }: PageProps) {
         .order("date", { ascending: false }),
       supabase
         .from("assignments")
-        .select("id, scheduled_date, status, case_types(name), locations(name)")
+        .select("id, scheduled_date, end_date, scheduled_time, status, case_types(name), locations(name)")
         .eq("student_id", id)
         .order("scheduled_date", { ascending: false }),
     ]);
@@ -74,6 +74,8 @@ export default async function CIStudentProfilePage({ params }: PageProps) {
   type AssignmentRow = {
     id: string;
     scheduled_date: string;
+    end_date: string | null;
+    scheduled_time: string | null;
     status: string;
     case_types: { name: string } | null;
     locations: { name: string } | null;
@@ -239,6 +241,10 @@ export default async function CIStudentProfilePage({ params }: PageProps) {
                           { day: "numeric", month: "short", year: "numeric" }
                         )
                       : "—"}
+                    {a.end_date && a.end_date !== a.scheduled_date && (
+                      <> – {new Date(a.end_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}</>
+                    )}
+                    {a.scheduled_time && <> at {a.scheduled_time.slice(0, 5)}</>}
                   </p>
                 </div>
                 <span

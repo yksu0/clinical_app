@@ -25,6 +25,7 @@ interface Props {
   recommended: RecommendedStudent[];
   selectedCaseTypeId?: string;
   quickStats: { needCase: number; completedPct: number; totalStudents: number };
+  semesterWindow: { name: string; start: string; end: string | null } | null;
 }
 
 type ActionState = { error: string | null; success: boolean; message?: string };
@@ -38,7 +39,7 @@ const PRIORITY_LABEL = {
 
 type SortKey = "priority" | "total_cases" | "case_count" | "last_assigned" | "location_count";
 
-export default function AssignForm({ caseTypes, locations, recommended, selectedCaseTypeId, quickStats }: Props) {
+export default function AssignForm({ caseTypes, locations, recommended, selectedCaseTypeId, quickStats, semesterWindow }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("priority");
@@ -222,16 +223,69 @@ export default function AssignForm({ caseTypes, locations, recommended, selected
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-              Date <span className="text-(--status-rejected)">*</span>
+              Start Date <span className="text-(--status-rejected)">*</span>
+              {semesterWindow && (
+                <span className="ml-1 text-(--text-muted) font-normal">
+                  ({semesterWindow.name})
+                </span>
+              )}
             </label>
             <input
               type="date"
               name="scheduled_date"
               required
+              min={semesterWindow?.start ?? undefined}
+              max={semesterWindow?.end ?? undefined}
               onChange={(e) => {
                 const locSelect = document.querySelector<HTMLSelectElement>("select[name=location_id]");
                 if (locSelect?.value) handleCheckConflicts(e.target.value, locSelect.value);
+                // Warn if outside semester window
+                if (semesterWindow && e.target.value) {
+                  const d = e.target.value;
+                  const outOfRange =
+                    d < semesterWindow.start ||
+                    (semesterWindow.end ? d > semesterWindow.end : false);
+                  if (outOfRange) {
+                    setWarnings((prev) => {
+                      const filtered = prev.filter((w) => w.type !== "out_of_semester");
+                      return [
+                        ...filtered,
+                        {
+                          type: "out_of_semester" as const,
+                          studentName: "All",
+                          reason: `Date is outside the active semester (${semesterWindow.start}${semesterWindow.end ? ` – ${semesterWindow.end}` : ""})`,
+                        },
+                      ];
+                    });
+                  } else {
+                    setWarnings((prev) => prev.filter((w) => w.type !== "out_of_semester"));
+                  }
+                }
               }}
+              className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
+              End Date <span className="text-(--text-muted) font-normal">(optional, for multi-day)</span>
+            </label>
+            <input
+              type="date"
+              name="end_date"
+              min={semesterWindow?.start ?? undefined}
+              max={semesterWindow?.end ?? undefined}
+              className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
+              Time <span className="text-(--text-muted) font-normal">(optional)</span>
+            </label>
+            <input
+              type="time"
+              name="scheduled_time"
               className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>

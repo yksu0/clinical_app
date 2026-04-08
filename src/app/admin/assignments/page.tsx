@@ -44,7 +44,7 @@ export default async function AssignmentsPage({
     priority: "high" | "medium" | "low";
   }[] = [];
 
-  let quickStats = { needCase: 0, completedPct: 0, totalStudents: students?.length ?? 0 };
+  const quickStats = { needCase: 0, completedPct: 0, totalStudents: students?.length ?? 0 };
 
   if (students && students.length > 0) {
     // All case logs
@@ -121,11 +121,18 @@ export default async function AssignmentsPage({
     }
   }
 
+  // Active semester for scheduling window
+  const { data: activeSemester } = await supabase
+    .from("semesters")
+    .select("name, start_date, end_date")
+    .eq("is_active", true)
+    .maybeSingle();
+
   // Existing assignments
   const { data: assignments } = await supabase
     .from("assignments")
     .select(
-      "id, scheduled_date, status, notes, student:profiles!student_id(full_name), case_type:case_types(name), location:locations(name)"
+      "id, scheduled_date, end_date, scheduled_time, status, notes, student:profiles!student_id(full_name), case_type:case_types(name), location:locations(name)"
     )
     .order("scheduled_date", { ascending: false })
     .limit(50);
@@ -179,6 +186,15 @@ export default async function AssignmentsPage({
           recommended={recommended}
           selectedCaseTypeId={selectedCaseTypeId}
           quickStats={quickStats}
+          semesterWindow={
+            activeSemester
+              ? {
+                  name: activeSemester.name,
+                  start: activeSemester.start_date,
+                  end: activeSemester.end_date ?? null,
+                }
+              : null
+          }
         />
 
         {/* Right: existing assignments */}
@@ -213,7 +229,9 @@ export default async function AssignmentsPage({
                         </p>
                         <p className="text-xs text-(--text-muted)">
                           {format(new Date(a.scheduled_date), "MMM d, yyyy")}
-                          {a.notes && ` \u00B7 ${a.notes}`}
+                          {a.end_date && a.end_date !== a.scheduled_date && ` – ${format(new Date(a.end_date), "MMM d, yyyy")}`}
+                          {a.scheduled_time && ` at ${a.scheduled_time.slice(0, 5)}`}
+                          {a.notes && ` · ${a.notes}`}
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1.5">

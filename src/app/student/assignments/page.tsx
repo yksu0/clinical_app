@@ -6,6 +6,8 @@ type Assignment = {
   case_type_id: string;
   location_id: string;
   scheduled_date: string;
+  end_date: string | null;
+  scheduled_time: string | null;
   status: "assigned" | "completed" | "missed";
   notes: string | null;
   case_types: { name: string } | null;
@@ -29,7 +31,7 @@ export default async function StudentAssignmentsPage() {
   const { data } = await supabase
     .from("assignments")
     .select(
-      "id, case_type_id, location_id, scheduled_date, status, notes, case_types(name), locations(name)"
+      "id, case_type_id, location_id, scheduled_date, end_date, scheduled_time, status, notes, case_types(name), locations(name)"
     )
     .eq("student_id", user.id)
     .order("scheduled_date", { ascending: false });
@@ -93,6 +95,10 @@ function AssignmentCard({ assignment: a }: { assignment: Assignment }) {
         </p>
         <p className="text-xs text-white/50">
           {a.locations?.name ?? "Unknown Location"} &middot; {dateStr}
+          {a.end_date && a.end_date !== a.scheduled_date && (
+            <> – {new Date(a.end_date).toLocaleDateString("en-AU", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}</>
+          )}
+          {a.scheduled_time && <> at {a.scheduled_time.slice(0, 5)}</>}
         </p>
         {a.notes && (
           <p className="text-xs text-white/40 mt-1 line-clamp-2">{a.notes}</p>

@@ -34,6 +34,7 @@ type StudentRow = Profile & {
   casesByType: Record<string, number>;
   isBehind: boolean;
   completionPct: number;
+  projectedPct: number;
 };
 
 export default async function AdminDashboardPage({ searchParams }: PageProps) {
@@ -69,7 +70,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       .select("student_id, status, uploaded_at"),
     supabase
       .from("assignments")
-      .select("student_id, status"),
+      .select("student_id, status, case_type_id"),
   ]);
 
   const profiles: Profile[] = profilesRes.data ?? [];
@@ -100,10 +101,16 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   }
 
   const assignmentsByStudent: Record<string, number> = {};
+  // Also track open assignments per case type per student for projected completion
+  const openAssignmentsByStudentType: Record<string, Record<string, number>> = {};
   for (const a of allAssignments) {
     if (a.status === "assigned") {
       assignmentsByStudent[a.student_id] =
         (assignmentsByStudent[a.student_id] ?? 0) + 1;
+      if (a.case_type_id) {
+        const s = (openAssignmentsByStudentType[a.student_id] ??= {});
+        s[a.case_type_id] = (s[a.case_type_id] ?? 0) + 1;
+      }
     }
   }
 
@@ -126,11 +133,29 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       totalRequired > 0
         ? Math.round((completedRequired / totalRequired) * 100)
         : 0;
+
+    // Projected completion counts open assignments as future cases (capped at requirement)
+    const openByType = openAssignmentsByStudentType[p.id] ?? {};
+    const projectedRequired = Math.min(
+      Object.entries(reqMap).reduce((sum, [ctId, req]) => {
+        const done = casesByType[ctId] ?? 0;
+        const pending = openByType[ctId] ?? 0;
+        return sum + Math.min(done + pending, req);
+      }, 0),
+      totalRequired
+    );
+    const projectedPct =
+      totalRequired > 0
+        ? Math.round((projectedRequired / totalRequired) * 100)
+        : 0;
+
+    // Only mark "behind" if projected completion (actual + open assignments) is < 50%
     const isBehind =
       totalRequired > 0 &&
-      completionPct < 50 &&
+      projectedPct < 50 &&
       Object.keys(reqMap).some(
-        (ctId) => (casesByType[ctId] ?? 0) < (reqMap[ctId] ?? 0)
+        (ctId) =>
+          (casesByType[ctId] ?? 0) + (openByType[ctId] ?? 0) < (reqMap[ctId] ?? 0)
       );
 
     return {
@@ -141,6 +166,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       casesByType,
       isBehind,
       completionPct,
+      projectedPct,
     };
   });
 
@@ -412,18 +438,23 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                       >
                         {s.pendingUploads > 0 ? s.pendingUploads : "—"}
                       </span>
-                      <span className="flex items-center justify-center">
+                      <span className="flex items-center justify-center gap-1">
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                             s.completionPct >= 100
                               ? "bg-green-500/20 text-green-400"
-                              : s.completionPct >= 50
+                              : s.projectedPct >= 50
                                 ? "bg-accent/20 text-accent"
                                 : "bg-red-500/20 text-red-400"
                           }`}
                         >
                           {s.completionPct}%
                         </span>
+                        {s.projectedPct > s.completionPct && s.completionPct < 100 && (
+                          <span className="text-[10px] text-(--text-muted)" title={`Projected with open assignments: ${s.projectedPct}%`}>
+                            →{s.projectedPct}%
+                          </span>
+                        )}
                       </span>
                     </Link>
                   );

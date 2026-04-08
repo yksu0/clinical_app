@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 export type ConflictWarning = {
+  type?: "same_day" | "location_overexposure" | "out_of_semester";
   studentName: string;
   reason: string;
 };
@@ -13,10 +14,16 @@ export async function createAssignment(formData: FormData) {
   const caseTypeId = formData.get("case_type_id") as string;
   const locationId = formData.get("location_id") as string;
   const scheduledDate = formData.get("scheduled_date") as string;
+  const endDate = (formData.get("end_date") as string) || null;
+  const scheduledTime = (formData.get("scheduled_time") as string) || null;
   const notes = (formData.get("notes") as string) || null;
 
   if (!studentId || !caseTypeId || !locationId || !scheduledDate) {
     return { error: "All fields are required." };
+  }
+
+  if (endDate && endDate < scheduledDate) {
+    return { error: "End date cannot be before start date." };
   }
 
   const supabase = await createClient();
@@ -33,6 +40,8 @@ export async function createAssignment(formData: FormData) {
       case_type_id: caseTypeId,
       location_id: locationId,
       scheduled_date: scheduledDate,
+      end_date: endDate,
+      scheduled_time: scheduledTime,
       assigned_by: user.id,
       status: "assigned",
       notes,
@@ -47,7 +56,7 @@ export async function createAssignment(formData: FormData) {
     performed_by: user.id,
     target_table: "assignments",
     target_id: assignment.id,
-    details: { student_id: studentId, case_type_id: caseTypeId, scheduled_date: scheduledDate },
+    details: { student_id: studentId, case_type_id: caseTypeId, scheduled_date: scheduledDate, end_date: endDate, scheduled_time: scheduledTime },
   });
 
   revalidatePath("/admin/assignments");
@@ -59,10 +68,16 @@ export async function bulkAssign(formData: FormData) {
   const caseTypeId = formData.get("case_type_id") as string;
   const locationId = formData.get("location_id") as string;
   const scheduledDate = formData.get("scheduled_date") as string;
+  const endDate = (formData.get("end_date") as string) || null;
+  const scheduledTime = (formData.get("scheduled_time") as string) || null;
   const notes = (formData.get("notes") as string) || null;
 
   if (!studentIds || !caseTypeId || !locationId || !scheduledDate) {
     return { error: "All fields are required." };
+  }
+
+  if (endDate && endDate < scheduledDate) {
+    return { error: "End date cannot be before start date." };
   }
 
   const ids = JSON.parse(studentIds) as string[];
@@ -79,6 +94,8 @@ export async function bulkAssign(formData: FormData) {
     case_type_id: caseTypeId,
     location_id: locationId,
     scheduled_date: scheduledDate,
+    end_date: endDate,
+    scheduled_time: scheduledTime,
     assigned_by: user.id,
     status: "assigned" as const,
     notes,
@@ -99,7 +116,7 @@ export async function bulkAssign(formData: FormData) {
         performed_by: user.id,
         target_table: "assignments",
         target_id: a.id,
-        details: { case_type_id: caseTypeId, scheduled_date: scheduledDate, bulk: true },
+        details: { case_type_id: caseTypeId, scheduled_date: scheduledDate, end_date: endDate, scheduled_time: scheduledTime, bulk: true },
       })),
     );
   }

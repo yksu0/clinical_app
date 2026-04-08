@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   LayoutDashboard,
   ClipboardList,
   CalendarPlus,
+  CalendarDays,
   Users,
   GraduationCap,
   Settings,
@@ -38,6 +39,7 @@ const NAV = [
       { href: "/admin/config/requirements", label: "Requirements" },
     ],
   },
+  { href: "/admin/semester", label: "Semester", icon: CalendarDays },
   { href: "/admin/audit", label: "Audit Logs", icon: ScrollText },
   { href: "/admin/export", label: "Export Data", icon: Download },
 ];
@@ -150,11 +152,6 @@ export function AdminMobileMenuButton({
 export default function AdminSidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-
-  // Close drawer on route change
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   const brand = (
     <div className="flex h-16 items-center gap-2.5 border-b border-border px-5">
