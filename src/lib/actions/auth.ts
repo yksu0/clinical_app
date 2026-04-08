@@ -110,7 +110,8 @@ export async function signup(formData: FormData) {
   });
 
   if (error) {
-    redirect("/signup?error=signup_failed");
+    const code = error.message.toLowerCase().includes("rate limit") ? "email_rate_limit" : "signup_failed";
+    redirect(`/signup?error=${code}`);
   }
 
   // Explicitly upsert profile in case the DB trigger fails silently

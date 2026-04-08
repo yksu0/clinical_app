@@ -4,6 +4,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   name_not_found:
     "Your name was not found in the student roster. Contact your instructor.",
   signup_failed: "Sign-up failed. The email may already be in use.",
+  email_rate_limit:
+    "Too many sign-up emails have been sent recently. Please wait a few minutes and try again.",
 };
 
 export default async function SignupPage({
