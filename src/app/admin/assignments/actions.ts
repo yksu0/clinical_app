@@ -3,11 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
+export type ConflictWarning = {
+  studentName: string;
+  reason: string;
+};
+
 export async function createAssignment(formData: FormData) {
   const studentId = formData.get("student_id") as string;
   const caseTypeId = formData.get("case_type_id") as string;
   const locationId = formData.get("location_id") as string;
   const scheduledDate = formData.get("scheduled_date") as string;
+  const notes = (formData.get("notes") as string) || null;
 
   if (!studentId || !caseTypeId || !locationId || !scheduledDate) {
     return { error: "All fields are required." };
@@ -29,6 +35,7 @@ export async function createAssignment(formData: FormData) {
       scheduled_date: scheduledDate,
       assigned_by: user.id,
       status: "assigned",
+      notes,
     })
     .select("id")
     .single();
@@ -45,6 +52,111 @@ export async function createAssignment(formData: FormData) {
 
   revalidatePath("/admin/assignments");
   return { success: true };
+}
+
+export async function bulkAssign(formData: FormData) {
+  const studentIds = formData.get("student_ids") as string;
+  const caseTypeId = formData.get("case_type_id") as string;
+  const locationId = formData.get("location_id") as string;
+  const scheduledDate = formData.get("scheduled_date") as string;
+  const notes = (formData.get("notes") as string) || null;
+
+  if (!studentIds || !caseTypeId || !locationId || !scheduledDate) {
+    return { error: "All fields are required." };
+  }
+
+  const ids = JSON.parse(studentIds) as string[];
+  if (ids.length === 0) return { error: "No students selected." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized." };
+
+  const rows = ids.map((sid) => ({
+    student_id: sid,
+    case_type_id: caseTypeId,
+    location_id: locationId,
+    scheduled_date: scheduledDate,
+    assigned_by: user.id,
+    status: "assigned" as const,
+    notes,
+  }));
+
+  const { data: inserted, error } = await supabase
+    .from("assignments")
+    .insert(rows)
+    .select("id");
+
+  if (error) return { error: error.message };
+
+  // Audit log for bulk
+  if (inserted) {
+    await supabase.from("audit_logs").insert(
+      inserted.map((a) => ({
+        action_type: "assignment_created",
+        performed_by: user.id,
+        target_table: "assignments",
+        target_id: a.id,
+        details: { case_type_id: caseTypeId, scheduled_date: scheduledDate, bulk: true },
+      })),
+    );
+  }
+
+  revalidatePath("/admin/assignments");
+  return { success: true, count: ids.length };
+}
+
+export async function checkConflicts(
+  studentIds: string[],
+  scheduledDate: string,
+  locationId: string,
+): Promise<ConflictWarning[]> {
+  if (studentIds.length === 0) return [];
+  const supabase = await createClient();
+  const warnings: ConflictWarning[] = [];
+
+  // 1. Same-day conflict
+  const { data: sameDayAssignments } = await supabase
+    .from("assignments")
+    .select("student_id, student:profiles!student_id(full_name)")
+    .in("student_id", studentIds)
+    .eq("scheduled_date", scheduledDate)
+    .eq("status", "assigned");
+
+  for (const a of sameDayAssignments ?? []) {
+    const name = Array.isArray(a.student) ? a.student[0]?.full_name : (a.student as { full_name: string } | null)?.full_name;
+    warnings.push({
+      studentName: name ?? "Unknown",
+      reason: "Already has an assignment on this date",
+    });
+  }
+
+  // 2. Repeated location (3+ times at same location)
+  const { data: locationCounts } = await supabase
+    .from("assignments")
+    .select("student_id, student:profiles!student_id(full_name)")
+    .in("student_id", studentIds)
+    .eq("location_id", locationId)
+    .in("status", ["assigned", "completed"]);
+
+  const locCountMap: Record<string, { count: number; name: string }> = {};
+  for (const a of locationCounts ?? []) {
+    const name = Array.isArray(a.student) ? a.student[0]?.full_name : (a.student as { full_name: string } | null)?.full_name;
+    if (!locCountMap[a.student_id]) locCountMap[a.student_id] = { count: 0, name: name ?? "Unknown" };
+    locCountMap[a.student_id].count++;
+  }
+  for (const [, val] of Object.entries(locCountMap)) {
+    if (val.count >= 3) {
+      warnings.push({
+        studentName: val.name,
+        reason: `Has been to this location ${val.count} times already`,
+      });
+    }
+  }
+
+  return warnings;
 }
 
 export async function updateAssignmentStatus(formData: FormData) {

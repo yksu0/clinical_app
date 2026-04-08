@@ -4,10 +4,11 @@ import AssignForm from "./AssignForm";
 import { updateAssignmentStatus } from "./actions";
 import SubmitButton from "@/components/ui/SubmitButton";
 
-const STATUS_STYLE = {
+const STATUS_STYLE: Record<string, string> = {
   assigned: "text-(--status-assigned) bg-blue-500/10",
   completed: "text-(--status-completed) bg-green-500/10",
   missed: "text-(--status-rejected) bg-red-500/10",
+  cancelled: "text-(--text-muted) bg-neutral-500/10",
 };
 
 export default async function AssignmentsPage({
@@ -30,71 +31,101 @@ export default async function AssignmentsPage({
         .order("full_name"),
     ]);
 
-  // Build recommended list when case type is known
+  // Build enriched student list
   let recommended: {
     id: string;
     full_name: string;
     section: string | null;
     case_count: number;
+    total_cases: number;
     required_count: number;
+    last_assigned: string | null;
+    location_count: number;
     priority: "high" | "medium" | "low";
   }[] = [];
 
-  if (selectedCaseTypeId && students) {
-    // Get required count for this case type
-    const { data: req } = await supabase
-      .from("requirements")
-      .select("required_count")
-      .eq("case_type_id", selectedCaseTypeId)
-      .maybeSingle();
-    const requiredCount = req?.required_count ?? 0;
+  let quickStats = { needCase: 0, completedPct: 0, totalStudents: students?.length ?? 0 };
 
-    // Count completed case logs per student for this case type
-    const { data: logs } = await supabase
+  if (students && students.length > 0) {
+    // All case logs
+    const { data: allLogs } = await supabase
       .from("case_logs")
-      .select("student_id")
-      .eq("case_type_id", selectedCaseTypeId);
+      .select("student_id, case_type_id");
 
-    const countMap: Record<string, number> = {};
-    for (const log of logs ?? []) {
-      countMap[log.student_id] = (countMap[log.student_id] ?? 0) + 1;
+    // All assignments (for last_assigned and location frequency)
+    const { data: allAssignments } = await supabase
+      .from("assignments")
+      .select("student_id, scheduled_date, location_id, status")
+      .in("status", ["assigned", "completed"]);
+
+    // Requirement for selected case type
+    let requiredCount = 0;
+    if (selectedCaseTypeId) {
+      const { data: req } = await supabase
+        .from("requirements")
+        .select("required_count")
+        .eq("case_type_id", selectedCaseTypeId)
+        .maybeSingle();
+      requiredCount = req?.required_count ?? 0;
     }
 
-    recommended = students
-      .map((s) => {
-        const count = countMap[s.id] ?? 0;
-        const priority: "high" | "medium" | "low" =
-          count === 0 ? "high" : count < requiredCount ? "medium" : "low";
-        return {
-          id: s.id,
-          full_name: s.full_name,
-          section: s.section,
-          case_count: count,
-          required_count: requiredCount,
-          priority,
-        };
-      })
-      .sort((a, b) => {
-        const order = { high: 0, medium: 1, low: 2 };
-        return order[a.priority] - order[b.priority] || a.full_name.localeCompare(b.full_name);
-      });
-  } else if (students) {
-    // No case type selected — show all students unranked
-    recommended = students.map((s) => ({
-      id: s.id,
-      full_name: s.full_name,
-      section: s.section,
-      case_count: 0,
-      required_count: 0,
-      priority: "medium" as const,
-    }));
+    // Build per-student stats
+    const totalCaseMap: Record<string, number> = {};
+    const typeCaseMap: Record<string, number> = {};
+    for (const log of allLogs ?? []) {
+      totalCaseMap[log.student_id] = (totalCaseMap[log.student_id] ?? 0) + 1;
+      if (selectedCaseTypeId && log.case_type_id === selectedCaseTypeId) {
+        typeCaseMap[log.student_id] = (typeCaseMap[log.student_id] ?? 0) + 1;
+      }
+    }
+
+    const lastAssignedMap: Record<string, string> = {};
+    const locationCountMap: Record<string, number> = {};
+    for (const a of allAssignments ?? []) {
+      if (!lastAssignedMap[a.student_id] || a.scheduled_date > lastAssignedMap[a.student_id]) {
+        lastAssignedMap[a.student_id] = a.scheduled_date;
+      }
+      locationCountMap[a.student_id] = (locationCountMap[a.student_id] ?? 0) + 1;
+    }
+
+    recommended = students.map((s) => {
+      const caseCount = selectedCaseTypeId ? (typeCaseMap[s.id] ?? 0) : 0;
+      const totalCases = totalCaseMap[s.id] ?? 0;
+      const priority: "high" | "medium" | "low" =
+        selectedCaseTypeId
+          ? caseCount === 0 ? "high" : caseCount < requiredCount ? "medium" : "low"
+          : "medium";
+      return {
+        id: s.id,
+        full_name: s.full_name,
+        section: s.section,
+        case_count: caseCount,
+        total_cases: totalCases,
+        required_count: requiredCount,
+        last_assigned: lastAssignedMap[s.id] ?? null,
+        location_count: locationCountMap[s.id] ?? 0,
+        priority,
+      };
+    }).sort((a, b) => {
+      const order = { high: 0, medium: 1, low: 2 };
+      return order[a.priority] - order[b.priority] || a.case_count - b.case_count;
+    });
+
+    // Quick stats
+    if (selectedCaseTypeId) {
+      quickStats.needCase = recommended.filter((s) => s.case_count === 0).length;
+      const metCount = recommended.filter((s) => s.case_count >= requiredCount && requiredCount > 0).length;
+      quickStats.completedPct = quickStats.totalStudents > 0
+        ? Math.round((metCount / quickStats.totalStudents) * 100)
+        : 0;
+    }
   }
 
   // Existing assignments
   const { data: assignments } = await supabase
     .from("assignments")
     .select(
-      "id, scheduled_date, status, student:profiles!student_id(full_name), case_type:case_types(name), location:locations(name)"
+      "id, scheduled_date, status, notes, student:profiles!student_id(full_name), case_type:case_types(name), location:locations(name)"
     )
     .order("scheduled_date", { ascending: false })
     .limit(50);
@@ -104,11 +135,11 @@ export default async function AssignmentsPage({
       <div>
         <h1 className="text-xl font-bold text-foreground">Assignments</h1>
         <p className="mt-1 text-sm text-(--text-secondary)">
-          Assign students to cases. Recommendations are sorted by exposure priority.
+          Assign students to cases. Select one or multiple students for bulk assignment.
         </p>
       </div>
 
-      {/* Case type filter for recommendations */}
+      {/* Case type filter */}
       <div className="flex items-center gap-3">
         <label className="text-xs font-medium text-(--text-secondary) shrink-0">
           Filter by case type:
@@ -147,6 +178,7 @@ export default async function AssignmentsPage({
           locations={locations ?? []}
           recommended={recommended}
           selectedCaseTypeId={selectedCaseTypeId}
+          quickStats={quickStats}
         />
 
         {/* Right: existing assignments */}
@@ -164,7 +196,7 @@ export default async function AssignmentsPage({
                 const student = Array.isArray(a.student) ? a.student[0] : a.student;
                 const caseType = Array.isArray(a.case_type) ? a.case_type[0] : a.case_type;
                 const location = Array.isArray(a.location) ? a.location[0] : a.location;
-                const statusStyle = STATUS_STYLE[a.status as keyof typeof STATUS_STYLE] ?? STATUS_STYLE.assigned;
+                const statusStyle = STATUS_STYLE[a.status] ?? STATUS_STYLE.assigned;
 
                 return (
                   <li
@@ -174,13 +206,14 @@ export default async function AssignmentsPage({
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-foreground">
-                          {student?.full_name ?? "—"}
+                          {student?.full_name ?? "\u2014"}
                         </p>
                         <p className="text-xs text-(--text-muted)">
-                          {caseType?.name ?? "—"} · {location?.name ?? "—"}
+                          {caseType?.name ?? "\u2014"} \u00B7 {location?.name ?? "\u2014"}
                         </p>
                         <p className="text-xs text-(--text-muted)">
                           {format(new Date(a.scheduled_date), "MMM d, yyyy")}
+                          {a.notes && ` \u00B7 ${a.notes}`}
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -198,6 +231,11 @@ export default async function AssignmentsPage({
                               <input type="hidden" name="assignment_id" value={a.id} />
                               <input type="hidden" name="status" value="missed" />
                               <SubmitButton variant="danger" label="Missed" />
+                            </form>
+                            <form action={updateAssignmentStatus}>
+                              <input type="hidden" name="assignment_id" value={a.id} />
+                              <input type="hidden" name="status" value="cancelled" />
+                              <SubmitButton variant="ghost" label="Cancel" />
                             </form>
                           </div>
                         )}
