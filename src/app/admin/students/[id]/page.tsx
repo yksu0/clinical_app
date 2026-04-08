@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import RequirementOverrides from "./RequirementOverrides";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -11,7 +12,7 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
 
   const { id } = await params;
 
-  const [profileRes, caseTypesRes, requirementsRes, caseLogsRes, assignmentsRes] =
+  const [profileRes, caseTypesRes, requirementsRes, caseLogsRes, assignmentsRes, overridesRes] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -27,9 +28,13 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
         .order("date", { ascending: false }),
       supabase
         .from("assignments")
-        .select("id, scheduled_date, end_date, scheduled_time, status, notes, case_types(name), locations(name)")
+        .select("id, scheduled_date, end_date, start_time, end_time, status, notes, case_types(name), locations(name)")
         .eq("student_id", id)
         .order("scheduled_date", { ascending: false }),
+      supabase
+        .from("requirement_overrides")
+        .select("case_type_id, adjusted_count, reason")
+        .eq("student_id", id),
     ]);
 
   if (!profileRes.data) notFound();
@@ -39,11 +44,18 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
   const requirements = requirementsRes.data ?? [];
   const caseLogs = caseLogsRes.data ?? [];
   const assignments = assignmentsRes.data ?? [];
+  const overrides = (overridesRes.data ?? []) as { case_type_id: string; adjusted_count: number; reason: string | null }[];
 
-  // Requirement map
-  const reqMap: Record<string, number> = {};
+  // Requirement map (with overrides applied)
+  const baseReqMap: Record<string, number> = {};
   for (const r of requirements) {
-    reqMap[r.case_type_id] = (reqMap[r.case_type_id] ?? 0) + r.required_count;
+    baseReqMap[r.case_type_id] = (baseReqMap[r.case_type_id] ?? 0) + r.required_count;
+  }
+
+  const overrideMap = new Map(overrides.map((o) => [o.case_type_id, o.adjusted_count]));
+  const reqMap: Record<string, number> = {};
+  for (const [ctId, count] of Object.entries(baseReqMap)) {
+    reqMap[ctId] = overrideMap.has(ctId) ? overrideMap.get(ctId)! : count;
   }
   const totalRequired = Object.values(reqMap).reduce((s, n) => s + n, 0);
 
@@ -75,7 +87,8 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
     id: string;
     scheduled_date: string;
     end_date: string | null;
-    scheduled_time: string | null;
+    start_time: string | null;
+    end_time: string | null;
     status: string;
     notes: string | null;
     case_types: { name: string } | null;
@@ -211,6 +224,14 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
         )}
       </div>
 
+      {/* Requirement Overrides */}
+      <RequirementOverrides
+        studentId={id}
+        caseTypes={caseTypes}
+        overrides={overrides}
+        reqMap={baseReqMap}
+      />
+
       {/* Case Log History */}
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-(--text-secondary) uppercase tracking-wider">
@@ -282,7 +303,8 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
                     {a.end_date && a.end_date !== a.scheduled_date && (
                       <> – {new Date(a.end_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}</>
                     )}
-                    {a.scheduled_time && <> at {a.scheduled_time.slice(0, 5)}</>}
+                    {a.start_time && <> {a.start_time.slice(0, 5)}</>}
+                    {a.end_time && <>–{a.end_time.slice(0, 5)}</>}
                   </p>
                   {a.notes && (
                     <p className="text-xs text-(--text-muted) mt-1">

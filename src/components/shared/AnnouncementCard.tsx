@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState, useState, useRef, useEffect } from "react";
-import { MessageCircle, Send, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { addComment, deleteCommentAction } from "@/app/feed/actions";
+import { MessageCircle, Send, Trash2, Pencil, ChevronDown, ChevronUp } from "lucide-react";
+import { addComment, deleteCommentAction, editComment } from "@/app/feed/actions";
 
 export type Comment = {
   id: string;
@@ -35,9 +35,31 @@ function CommentItem({
   currentUserId: string;
   currentUserRole: string;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
+
   const canDelete =
     comment.user_id === currentUserId || currentUserRole === "admin";
   const deleteWithId = deleteCommentAction.bind(null, comment.id);
+
+  // Can edit own comments within 15 minutes
+  const createdAt = new Date(comment.created_at).getTime();
+  const fifteenMin = 15 * 60 * 1000;
+  const canEdit = comment.user_id === currentUserId && (Date.now() - createdAt) < fifteenMin;
+
+  const handleEdit = async () => {
+    setIsPending(true);
+    setEditError(null);
+    const result = await editComment(comment.id, editContent);
+    setIsPending(false);
+    if (result.error) {
+      setEditError(result.error);
+    } else {
+      setIsEditing(false);
+    }
+  };
 
   return (
     <div className="flex gap-2.5 group">
@@ -49,7 +71,37 @@ function CommentItem({
           <p className="text-xs font-semibold text-foreground mb-0.5">
             {comment.profiles?.full_name ?? "Unknown"}
           </p>
-          <p className="text-xs text-(--text-secondary) wrap-break-word">{comment.content}</p>
+          {isEditing ? (
+            <div className="space-y-1.5">
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                maxLength={500}
+                rows={2}
+                className="w-full rounded-lg border border-border bg-base px-2 py-1 text-xs text-foreground focus:border-accent focus:outline-none resize-none"
+              />
+              {editError && <p className="text-[10px] text-red-400">{editError}</p>}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={handleEdit}
+                  className="text-xs text-accent hover:text-accent-hover transition-colors disabled:opacity-50"
+                >
+                  {isPending ? "…" : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsEditing(false); setEditContent(comment.content); setEditError(null); }}
+                  className="text-xs text-(--text-muted) hover:text-(--text-secondary) transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-(--text-secondary) wrap-break-word">{comment.content}</p>
+          )}
         </div>
         <p className="mt-0.5 text-[10px] text-(--text-muted) px-1">
           {new Date(comment.created_at).toLocaleDateString("en-AU", {
@@ -60,17 +112,29 @@ function CommentItem({
           })}
         </p>
       </div>
-      {canDelete && (
-        <form action={deleteWithId}>
+      <div className="flex flex-col gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {canEdit && !isEditing && (
           <button
-            type="submit"
-            className="mt-1 shrink-0 text-(--text-muted) hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-            title="Delete comment"
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="text-(--text-muted) hover:text-accent transition-colors"
+            title="Edit comment"
           >
-            <Trash2 className="h-3 w-3" />
+            <Pencil className="h-3 w-3" />
           </button>
-        </form>
-      )}
+        )}
+        {canDelete && (
+          <form action={deleteWithId}>
+            <button
+              type="submit"
+              className="text-(--text-muted) hover:text-red-400 transition-colors"
+              title="Delete comment"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { sendAssignmentEmail } from "@/lib/actions/email";
 
 export type ConflictWarning = {
   type?: "same_day" | "location_overexposure" | "out_of_semester";
@@ -15,7 +16,8 @@ export async function createAssignment(formData: FormData) {
   const locationId = formData.get("location_id") as string;
   const scheduledDate = formData.get("scheduled_date") as string;
   const endDate = (formData.get("end_date") as string) || null;
-  const scheduledTime = (formData.get("scheduled_time") as string) || null;
+  const startTime = (formData.get("start_time") as string) || null;
+  const endTime = (formData.get("end_time") as string) || null;
   const notes = (formData.get("notes") as string) || null;
 
   if (!studentId || !caseTypeId || !locationId || !scheduledDate) {
@@ -41,7 +43,8 @@ export async function createAssignment(formData: FormData) {
       location_id: locationId,
       scheduled_date: scheduledDate,
       end_date: endDate,
-      scheduled_time: scheduledTime,
+      start_time: startTime,
+      end_time: endTime,
       assigned_by: user.id,
       status: "assigned",
       notes,
@@ -56,8 +59,23 @@ export async function createAssignment(formData: FormData) {
     performed_by: user.id,
     target_table: "assignments",
     target_id: assignment.id,
-    details: { student_id: studentId, case_type_id: caseTypeId, scheduled_date: scheduledDate, end_date: endDate, scheduled_time: scheduledTime },
+    details: { student_id: studentId, case_type_id: caseTypeId, scheduled_date: scheduledDate, end_date: endDate, start_time: startTime, end_time: endTime },
   });
+
+  // Send email notification (non-blocking)
+  const [{ data: ct }, { data: loc }] = await Promise.all([
+    supabase.from("case_types").select("name").eq("id", caseTypeId).single(),
+    supabase.from("locations").select("name").eq("id", locationId).single(),
+  ]);
+  sendAssignmentEmail(studentId, {
+    caseTypeName: ct?.name ?? "Unknown",
+    locationName: loc?.name ?? "Unknown",
+    scheduledDate,
+    endDate,
+    startTime,
+    endTime,
+    notes,
+  }).catch(() => {});
 
   revalidatePath("/admin/assignments");
   return { success: true };
@@ -69,7 +87,8 @@ export async function bulkAssign(formData: FormData) {
   const locationId = formData.get("location_id") as string;
   const scheduledDate = formData.get("scheduled_date") as string;
   const endDate = (formData.get("end_date") as string) || null;
-  const scheduledTime = (formData.get("scheduled_time") as string) || null;
+  const startTime = (formData.get("start_time") as string) || null;
+  const endTime = (formData.get("end_time") as string) || null;
   const notes = (formData.get("notes") as string) || null;
 
   if (!studentIds || !caseTypeId || !locationId || !scheduledDate) {
@@ -95,7 +114,8 @@ export async function bulkAssign(formData: FormData) {
     location_id: locationId,
     scheduled_date: scheduledDate,
     end_date: endDate,
-    scheduled_time: scheduledTime,
+    start_time: startTime,
+    end_time: endTime,
     assigned_by: user.id,
     status: "assigned" as const,
     notes,
@@ -116,9 +136,26 @@ export async function bulkAssign(formData: FormData) {
         performed_by: user.id,
         target_table: "assignments",
         target_id: a.id,
-        details: { case_type_id: caseTypeId, scheduled_date: scheduledDate, end_date: endDate, scheduled_time: scheduledTime, bulk: true },
+        details: { case_type_id: caseTypeId, scheduled_date: scheduledDate, end_date: endDate, start_time: startTime, end_time: endTime, bulk: true },
       })),
     );
+  }
+
+  // Send email notifications (non-blocking)
+  const [{ data: ct }, { data: loc }] = await Promise.all([
+    supabase.from("case_types").select("name").eq("id", caseTypeId).single(),
+    supabase.from("locations").select("name").eq("id", locationId).single(),
+  ]);
+  for (const sid of ids) {
+    sendAssignmentEmail(sid, {
+      caseTypeName: ct?.name ?? "Unknown",
+      locationName: loc?.name ?? "Unknown",
+      scheduledDate,
+      endDate,
+      startTime,
+      endTime,
+      notes,
+    }).catch(() => {});
   }
 
   revalidatePath("/admin/assignments");

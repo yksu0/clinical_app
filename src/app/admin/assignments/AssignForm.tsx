@@ -281,11 +281,22 @@ export default function AssignForm({ caseTypes, locations, recommended, selected
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-              Time <span className="text-(--text-muted) font-normal">(optional)</span>
+              Start Time <span className="text-(--text-muted) font-normal">(optional)</span>
             </label>
             <input
               type="time"
-              name="scheduled_time"
+              name="start_time"
+              className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
+              End Time <span className="text-(--text-muted) font-normal">(optional)</span>
+            </label>
+            <input
+              type="time"
+              name="end_time"
               className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>

@@ -77,3 +77,31 @@ export async function rejectUpload(formData: FormData) {
 
   revalidatePath("/admin/logging");
 }
+
+export async function batchUpdateUploads(uploadIds: string[], status: "processed" | "rejected") {
+  if (uploadIds.length === 0) return { error: "No uploads selected." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized." };
+
+  const { error } = await supabase
+    .from("uploads")
+    .update({ status, processed_at: new Date().toISOString() })
+    .in("id", uploadIds);
+
+  if (error) return { error: error.message };
+
+  await supabase.from("audit_logs").insert({
+    action_type: status === "processed" ? "upload_approved" : "upload_rejected",
+    performed_by: user.id,
+    target_table: "uploads",
+    target_id: uploadIds[0],
+    details: { upload_ids: uploadIds, count: uploadIds.length, status },
+  });
+
+  revalidatePath("/admin/logging");
+  return { success: true, count: uploadIds.length };
+}

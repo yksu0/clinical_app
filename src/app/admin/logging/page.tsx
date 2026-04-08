@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
 import { Clock, CheckCircle, XCircle } from "lucide-react";
 import LogCaseForm from "./LogCaseForm";
+import BatchUploadActions from "./BatchUploadActions";
 import { rejectUpload } from "./actions";
 import SubmitButton from "@/components/ui/SubmitButton";
 
@@ -117,13 +118,17 @@ export default async function LoggingPage({
                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-(--text-secondary)">
                   Uploaded Proofs
                 </h2>
+
+                {/* Batch actions for pending uploads */}
+                <BatchUploadActions uploads={allUploads} />
+
                 {allUploads.length === 0 ? (
-                  <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-12">
+                  <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-12 mt-2">
                     <p className="text-xs text-(--text-muted)">No uploads yet</p>
                   </div>
                 ) : (
-                  <ul className="space-y-2">
-                    {allUploads.map((u) => (
+                  <ul className="space-y-2 mt-2">
+                    {allUploads.filter((u) => u.status !== "pending").map((u) => (
                       <li
                         key={u.id}
                         className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3"

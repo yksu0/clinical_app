@@ -8,6 +8,7 @@ const STATUS_STYLE: Record<string, string> = {
   assigned: "text-(--status-assigned) bg-blue-500/10",
   completed: "text-(--status-completed) bg-green-500/10",
   missed: "text-(--status-rejected) bg-red-500/10",
+  cancel_requested: "text-amber-400 bg-amber-500/10",
   cancelled: "text-(--text-muted) bg-neutral-500/10",
 };
 
@@ -132,7 +133,7 @@ export default async function AssignmentsPage({
   const { data: assignments } = await supabase
     .from("assignments")
     .select(
-      "id, scheduled_date, end_date, scheduled_time, status, notes, student:profiles!student_id(full_name), case_type:case_types(name), location:locations(name)"
+      "id, scheduled_date, end_date, start_time, end_time, status, notes, cancellation_reason, student:profiles!student_id(full_name), case_type:case_types(name), location:locations(name)"
     )
     .order("scheduled_date", { ascending: false })
     .limit(50);
@@ -230,13 +231,19 @@ export default async function AssignmentsPage({
                         <p className="text-xs text-(--text-muted)">
                           {format(new Date(a.scheduled_date), "MMM d, yyyy")}
                           {a.end_date && a.end_date !== a.scheduled_date && ` – ${format(new Date(a.end_date), "MMM d, yyyy")}`}
-                          {a.scheduled_time && ` at ${a.scheduled_time.slice(0, 5)}`}
+                          {a.start_time && ` ${a.start_time.slice(0, 5)}`}
+                          {a.end_time && `–${a.end_time.slice(0, 5)}`}
                           {a.notes && ` · ${a.notes}`}
                         </p>
+                        {a.cancellation_reason && (
+                          <p className="text-xs text-amber-400/80 mt-0.5">
+                            Cancel reason: {a.cancellation_reason}
+                          </p>
+                        )}
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1.5">
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusStyle}`}>
-                          {a.status}
+                          {a.status === "cancel_requested" ? "Cancel Req" : a.status}
                         </span>
                         {a.status === "assigned" && (
                           <div className="flex gap-1">
@@ -254,6 +261,20 @@ export default async function AssignmentsPage({
                               <input type="hidden" name="assignment_id" value={a.id} />
                               <input type="hidden" name="status" value="cancelled" />
                               <SubmitButton variant="ghost" label="Cancel" />
+                            </form>
+                          </div>
+                        )}
+                        {a.status === "cancel_requested" && (
+                          <div className="flex gap-1">
+                            <form action={updateAssignmentStatus}>
+                              <input type="hidden" name="assignment_id" value={a.id} />
+                              <input type="hidden" name="status" value="cancelled" />
+                              <SubmitButton variant="danger" label="Approve" />
+                            </form>
+                            <form action={updateAssignmentStatus}>
+                              <input type="hidden" name="assignment_id" value={a.id} />
+                              <input type="hidden" name="status" value="assigned" />
+                              <SubmitButton variant="ghost" label="Deny" />
                             </form>
                           </div>
                         )}

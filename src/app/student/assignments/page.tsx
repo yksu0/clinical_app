@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import CancelRequestForm from "./CancelRequestForm";
 
 type Assignment = {
   id: string;
@@ -7,9 +8,11 @@ type Assignment = {
   location_id: string;
   scheduled_date: string;
   end_date: string | null;
-  scheduled_time: string | null;
-  status: "assigned" | "completed" | "missed";
+  start_time: string | null;
+  end_time: string | null;
+  status: "assigned" | "completed" | "missed" | "cancel_requested" | "cancelled";
   notes: string | null;
+  cancellation_reason: string | null;
   case_types: { name: string } | null;
   locations: { name: string } | null;
 };
@@ -18,6 +21,8 @@ const STATUS_STYLES: Record<string, string> = {
   assigned: "bg-accent/20 text-accent",
   completed: "bg-green-500/20 text-green-400",
   missed: "bg-red-500/20 text-red-400",
+  cancel_requested: "bg-amber-500/20 text-amber-400",
+  cancelled: "bg-neutral-500/20 text-white/40",
 };
 
 export default async function StudentAssignmentsPage() {
@@ -31,15 +36,15 @@ export default async function StudentAssignmentsPage() {
   const { data } = await supabase
     .from("assignments")
     .select(
-      "id, case_type_id, location_id, scheduled_date, end_date, scheduled_time, status, notes, case_types(name), locations(name)"
+      "id, case_type_id, location_id, scheduled_date, end_date, start_time, end_time, status, notes, cancellation_reason, case_types(name), locations(name)"
     )
     .eq("student_id", user.id)
     .order("scheduled_date", { ascending: false });
 
   const assignments: Assignment[] = (data ?? []) as unknown as Assignment[];
 
-  const open = assignments.filter((a) => a.status === "assigned");
-  const past = assignments.filter((a) => a.status !== "assigned");
+  const open = assignments.filter((a) => a.status === "assigned" || a.status === "cancel_requested");
+  const past = assignments.filter((a) => a.status !== "assigned" && a.status !== "cancel_requested");
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
@@ -98,10 +103,19 @@ function AssignmentCard({ assignment: a }: { assignment: Assignment }) {
           {a.end_date && a.end_date !== a.scheduled_date && (
             <> – {new Date(a.end_date).toLocaleDateString("en-AU", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}</>
           )}
-          {a.scheduled_time && <> at {a.scheduled_time.slice(0, 5)}</>}
+          {a.start_time && <> {a.start_time.slice(0, 5)}</>}
+          {a.end_time && <>–{a.end_time.slice(0, 5)}</>}
         </p>
         {a.notes && (
           <p className="text-xs text-white/40 mt-1 line-clamp-2">{a.notes}</p>
+        )}
+        {a.cancellation_reason && (
+          <p className="text-xs text-amber-400/70 mt-1">
+            Cancel reason: {a.cancellation_reason}
+          </p>
+        )}
+        {a.status === "assigned" && (
+          <CancelRequestForm assignmentId={a.id} />
         )}
       </div>
       <span
@@ -109,7 +123,7 @@ function AssignmentCard({ assignment: a }: { assignment: Assignment }) {
           STATUS_STYLES[a.status] ?? "bg-white/10 text-white/60"
         }`}
       >
-        {a.status}
+        {a.status === "cancel_requested" ? "Pending Cancel" : a.status}
       </span>
     </div>
   );

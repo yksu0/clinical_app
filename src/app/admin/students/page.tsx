@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
 interface PageProps {
-  searchParams: Promise<{ search?: string }>;
+  searchParams: Promise<{ search?: string; section?: string }>;
 }
 
 export default async function AdminStudentsPage({ searchParams }: PageProps) {
@@ -10,6 +10,7 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
 
   const params = await searchParams;
   const search = params.search ?? "";
+  const sectionFilter = params.section ?? "";
 
   const [profilesRes, requirementsRes, caseLogsRes] = await Promise.all([
     supabase
@@ -49,13 +50,22 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
     return { ...p, pct, total };
   });
 
-  const filtered = search
-    ? rows.filter(
-        (r) =>
-          r.full_name.toLowerCase().includes(search.toLowerCase()) ||
-          r.email.toLowerCase().includes(search.toLowerCase())
-      )
-    : rows;
+  const sections = [...new Set(profiles.map((p) => p.section).filter(Boolean))] as string[];
+  sections.sort();
+
+  let filtered = rows;
+
+  if (sectionFilter) {
+    filtered = filtered.filter((r) => r.section === sectionFilter);
+  }
+
+  if (search) {
+    filtered = filtered.filter(
+      (r) =>
+        r.full_name.toLowerCase().includes(search.toLowerCase()) ||
+        r.email.toLowerCase().includes(search.toLowerCase())
+    );
+  }
 
   const sorted = filtered.slice().sort((a, b) => a.pct - b.pct);
 
@@ -68,7 +78,7 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
         </p>
       </div>
 
-      {/* Search */}
+      {/* Search + Section Filter */}
       <form method="GET" action="/admin/students" className="flex gap-2">
         <input
           name="search"
@@ -76,13 +86,25 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
           placeholder="Search by name or email…"
           className="flex-1 rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground placeholder-(--text-muted) focus:border-accent focus:outline-none"
         />
+        {sections.length > 0 && (
+          <select
+            name="section"
+            defaultValue={sectionFilter}
+            className="rounded-lg border border-border bg-elevated px-2 py-2 text-xs text-foreground focus:border-accent focus:outline-none"
+          >
+            <option value="">All Sections</option>
+            {sections.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        )}
         <button
           type="submit"
           className="rounded-lg bg-elevated px-4 py-2 text-sm text-(--text-secondary) hover:bg-border transition-colors"
         >
           Search
         </button>
-        {search && (
+        {(search || sectionFilter) && (
           <Link
             href="/admin/students"
             className="rounded-lg bg-elevated px-3 py-2 text-sm text-(--text-muted) hover:bg-border transition-colors"

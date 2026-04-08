@@ -17,6 +17,7 @@ interface PageProps {
     search?: string;
     page?: string;
     student?: string;
+    section?: string;
   }>;
 }
 
@@ -44,6 +45,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const search = params.search ?? "";
   const page = Math.max(1, parseInt(params.page ?? "1", 10));
   const selectedStudentId = params.student ?? null;
+  const sectionFilter = params.section ?? "";
 
   // ── Fetch All Reference Data ──────────────────────────────────────────────
   const [
@@ -197,8 +199,16 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6);
 
+  // ── Unique sections for filtering ─────────────────────────────────────────
+  const sections = [...new Set(studentRows.map((s) => s.section).filter(Boolean))] as string[];
+  sections.sort();
+
   // ── Apply Filters ─────────────────────────────────────────────────────────
   let filtered = studentRows;
+
+  if (sectionFilter) {
+    filtered = filtered.filter((s) => s.section === sectionFilter);
+  }
 
   if (search) {
     const q = search.toLowerCase();
@@ -249,6 +259,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     if (search) p.search = search;
     if (page !== 1) p.page = String(page);
     if (selectedStudentId) p.student = selectedStudentId;
+    if (sectionFilter) p.section = sectionFilter;
     const merged = { ...p, ...overrides };
     const qs = Object.entries(merged)
       .filter(([, v]) => v !== undefined && v !== "")
@@ -354,7 +365,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
               ))}
             </div>
 
-            {/* Search form */}
+            {/* Search + Section filter */}
             <form method="GET" action="/admin" className="flex gap-2">
               {filter !== "all" && (
                 <input type="hidden" name="filter" value={filter} />
@@ -366,15 +377,27 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 placeholder="Search by name or email…"
                 className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-accent focus:outline-none"
               />
+              {sections.length > 0 && (
+                <select
+                  name="section"
+                  defaultValue={sectionFilter}
+                  className="rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs text-white focus:border-accent focus:outline-none"
+                >
+                  <option value="">All Sections</option>
+                  {sections.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              )}
               <button
                 type="submit"
                 className="rounded-lg bg-white/10 px-4 py-2 text-sm text-white/80 hover:bg-white/20 transition-colors"
               >
                 Search
               </button>
-              {search && (
+              {(search || sectionFilter) && (
                 <Link
-                  href={buildUrl({ search: undefined, page: "1" })}
+                  href={buildUrl({ search: undefined, section: undefined, page: "1" })}
                   className="rounded-lg bg-white/10 px-3 py-2 text-sm text-white/60 hover:bg-white/20 transition-colors"
                 >
                   Clear
@@ -438,23 +461,37 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                       >
                         {s.pendingUploads > 0 ? s.pendingUploads : "—"}
                       </span>
-                      <span className="flex items-center justify-center gap-1">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            s.completionPct >= 100
-                              ? "bg-green-500/20 text-green-400"
-                              : s.projectedPct >= 50
-                                ? "bg-accent/20 text-accent"
-                                : "bg-red-500/20 text-red-400"
-                          }`}
-                        >
-                          {s.completionPct}%
-                        </span>
-                        {s.projectedPct > s.completionPct && s.completionPct < 100 && (
-                          <span className="text-[10px] text-(--text-muted)" title={`Projected with open assignments: ${s.projectedPct}%`}>
-                            →{s.projectedPct}%
+                      <span className="flex flex-col items-end gap-1">
+                        <span className="flex items-center gap-1">
+                          <span
+                            className={`text-xs font-semibold ${
+                              s.completionPct >= 100
+                                ? "text-green-400"
+                                : s.projectedPct >= 50
+                                  ? "text-accent"
+                                  : "text-red-400"
+                            }`}
+                          >
+                            {s.completionPct}%
                           </span>
-                        )}
+                          {s.projectedPct > s.completionPct && s.completionPct < 100 && (
+                            <span className="text-[10px] text-(--text-muted)" title={`Projected with open assignments: ${s.projectedPct}%`}>
+                              →{s.projectedPct}%
+                            </span>
+                          )}
+                        </span>
+                        <div className="h-1.5 w-full rounded-full bg-white/10 min-w-[60px]">
+                          <div
+                            className={`h-1.5 rounded-full transition-all ${
+                              s.completionPct >= 100
+                                ? "bg-green-500"
+                                : s.projectedPct >= 50
+                                  ? "bg-accent"
+                                  : "bg-red-500"
+                            }`}
+                            style={{ width: `${Math.min(s.completionPct, 100)}%` }}
+                          />
+                        </div>
                       </span>
                     </Link>
                   );
