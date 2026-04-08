@@ -137,7 +137,6 @@ export async function signup(formData: FormData) {
     else if (msg.includes("smtp") || msg.includes("sending") || msg.includes("authentication failed") || msg.includes("unexpected_failure")) code = "email_send_failed";
     redirect(`/signup?error=${code}`);
   }
-  }
 
   // Account created — pending admin verification
   redirect("/signup?success=check_email");
