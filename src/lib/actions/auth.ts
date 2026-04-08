@@ -109,21 +109,15 @@ export async function signup(formData: FormData) {
     },
   });
 
-  if (error) {
-    const msg = error.message.toLowerCase();
-    let code = "signup_failed";
-    if (msg.includes("rate limit")) code = "email_rate_limit";
-    else if (msg.includes("already registered") || msg.includes("already been registered")) code = "email_in_use";
-    else if (msg.includes("smtp") || msg.includes("sending") || msg.includes("authentication failed") || msg.includes("unexpected_failure")) code = "email_send_failed";
-    redirect(`/signup?error=${code}`);
-  }
-
-  // Explicitly upsert profile in case the DB trigger fails silently
-  if (signUpData.user) {
+  // Upsert profile BEFORE checking for errors — even if the confirmation email
+  // fails (SMTP issue), the user may still be created in auth.users and needs a
+  // matching profile row so admin can see them in "Pending Approval".
+  const userId = signUpData?.user?.id;
+  if (userId) {
     const serviceClient = createServiceClient();
     await serviceClient.from("profiles").upsert(
       {
-        id: signUpData.user.id,
+        id: userId,
         full_name: trimmedName,
         email: email.toLowerCase().trim(),
         roster_id: rosterEntry.id,
@@ -133,6 +127,16 @@ export async function signup(formData: FormData) {
       },
       { onConflict: "id" },
     );
+  }
+
+  if (error) {
+    const msg = error.message.toLowerCase();
+    let code = "signup_failed";
+    if (msg.includes("rate limit")) code = "email_rate_limit";
+    else if (msg.includes("already registered") || msg.includes("already been registered")) code = "email_in_use";
+    else if (msg.includes("smtp") || msg.includes("sending") || msg.includes("authentication failed") || msg.includes("unexpected_failure")) code = "email_send_failed";
+    redirect(`/signup?error=${code}`);
+  }
   }
 
   // Account created — pending admin verification
