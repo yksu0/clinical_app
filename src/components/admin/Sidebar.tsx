@@ -8,6 +8,7 @@ import {
   ClipboardList,
   CalendarPlus,
   Users,
+  GraduationCap,
   Settings,
   Megaphone,
   ScrollText,
@@ -24,6 +25,7 @@ const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/logging", label: "Case Logging", icon: ClipboardList },
   { href: "/admin/assignments", label: "Assignments", icon: CalendarPlus },
+  { href: "/admin/students", label: "Students", icon: GraduationCap },
   { href: "/admin/roster", label: "Student Roster", icon: Users },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
   {
