@@ -26,6 +26,14 @@ export default async function RosterPage() {
   const pendingApproval = studentProfiles.filter((s) => !s.is_verified);
   const activeStudents = studentProfiles.filter((s) => s.is_verified);
 
+  // Hide whitelist entries for students who have already signed up
+  const signedUpNames = new Set(
+    studentProfiles.map((s) => s.full_name.toLowerCase()),
+  );
+  const unclaimedRoster = rosterItems.filter(
+    (r) => !signedUpNames.has(r.full_name.toLowerCase()),
+  );
+
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <div>
@@ -123,20 +131,20 @@ export default async function RosterPage() {
       {/* ── Pre-Registration Whitelist ── */}
       <section>
         <h2 className="mb-3 text-sm font-semibold text-(--text-secondary) uppercase tracking-wider">
-          Pre-Registration Whitelist ({rosterItems.length})
+          Pre-Registration Whitelist ({unclaimedRoster.length})
         </h2>
 
         {/* Add form — single or bulk */}
         <BulkAddForm />
 
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
-          {rosterItems.length === 0 ? (
+          {unclaimedRoster.length === 0 ? (
             <p className="px-5 py-8 text-center text-sm text-(--text-muted)">
               No students in whitelist. Add names above so they can sign up.
             </p>
           ) : (
             <ul className="divide-y divide-border">
-              {rosterItems.map((r) => (
+              {unclaimedRoster.map((r) => (
                 <li
                   key={r.id}
                   className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
