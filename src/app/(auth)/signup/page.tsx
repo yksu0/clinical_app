@@ -3,7 +3,10 @@ import SignupForm from "./SignupForm";
 const ERROR_MESSAGES: Record<string, string> = {
   name_not_found:
     "Your name was not found in the student roster. Contact your instructor.",
-  signup_failed: "Sign-up failed. The email may already be in use.",
+  signup_failed: "Sign-up failed. Please try again or contact an administrator.",
+  email_in_use: "That email address is already registered. Try signing in instead.",
+  email_send_failed:
+    "Account created but the confirmation email could not be sent. Please contact an administrator.",
   email_rate_limit:
     "Too many sign-up emails have been sent recently. Please wait a few minutes and try again.",
 };

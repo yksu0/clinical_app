@@ -110,7 +110,11 @@ export async function signup(formData: FormData) {
   });
 
   if (error) {
-    const code = error.message.toLowerCase().includes("rate limit") ? "email_rate_limit" : "signup_failed";
+    const msg = error.message.toLowerCase();
+    let code = "signup_failed";
+    if (msg.includes("rate limit")) code = "email_rate_limit";
+    else if (msg.includes("already registered") || msg.includes("already been registered")) code = "email_in_use";
+    else if (msg.includes("smtp") || msg.includes("sending") || msg.includes("authentication failed") || msg.includes("unexpected_failure")) code = "email_send_failed";
     redirect(`/signup?error=${code}`);
   }
 
