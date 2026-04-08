@@ -98,7 +98,7 @@ export async function signup(formData: FormData) {
   }
 
   const headersList = await headers();
-  const origin = headersList.get("origin") ?? "http://localhost:3000";
+  const origin = headersList.get("origin") ?? "https://clinicalapp-vert.vercel.app";
 
   const { data: signUpData, error } = await supabase.auth.signUp({
     email,

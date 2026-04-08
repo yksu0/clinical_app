@@ -1,4 +1,4 @@
-import { login } from "@/lib/actions/auth";
+import LoginForm from "./LoginForm";
 
 export default function LoginPage() {
   return (
@@ -29,50 +29,7 @@ export default function LoginPage() {
       </div>
 
       {/* Form */}
-      <form action={login} className="space-y-5">
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-(--text-secondary) mb-1.5"
-          >
-            Email address
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="you@example.com"
-            className="w-full rounded-lg border border-border bg-elevated px-4 py-2.5 text-sm text-foreground placeholder-(--text-muted) outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-(--text-secondary) mb-1.5"
-          >
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            placeholder="••••••••"
-            className="w-full rounded-lg border border-border bg-elevated px-4 py-2.5 text-sm text-foreground placeholder-(--text-muted) outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface"
-        >
-          Sign in
-        </button>
-      </form>
+      <LoginForm />
 
       {/* Footer link */}
       <p className="mt-6 text-center text-sm text-(--text-muted)">
