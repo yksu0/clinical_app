@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { batchUpdateUploads } from "./actions";
+import UploadPreviewModal from "./UploadPreviewModal";
 
 type Upload = {
   id: string;
@@ -112,6 +113,7 @@ export default function BatchUploadActions({ uploads }: { uploads: Upload[] }) {
                 {new Date(u.uploaded_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>
+            <UploadPreviewModal uploadId={u.id} fileName={u.file_name} />
           </li>
         ))}
       </ul>

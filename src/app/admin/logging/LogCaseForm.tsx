@@ -15,7 +15,7 @@ interface Props {
   uploads: Upload[];
 }
 
-type ActionState = { error: string | null; success: boolean };
+type ActionState = { error: string | null; success: boolean; assignmentCompleted?: boolean };
 
 const initialState: ActionState = { error: null, success: false };
 
@@ -28,7 +28,7 @@ export default function LogCaseForm({
   const [state, formAction] = useActionState(
     async (_prev: ActionState, formData: FormData): Promise<ActionState> => {
       const result = await logCase(formData);
-      if (!result || result.success) return { error: null, success: true };
+      if (!result || result.success) return { error: null, success: true, assignmentCompleted: result?.assignmentCompleted ?? false };
       return { error: result.error ?? "Unknown error.", success: false };
     },
     initialState
@@ -125,7 +125,14 @@ export default function LogCaseForm({
         <p className="text-sm text-(--status-rejected)">{state.error}</p>
       )}
       {state.success && (
-        <p className="text-sm text-(--status-processed)">Case logged successfully.</p>
+        <div className="space-y-1">
+          <p className="text-sm text-(--status-processed)">Case logged successfully.</p>
+          {state.assignmentCompleted && (
+            <p className="text-xs text-accent">
+              ✓ Matching assignment auto-completed.
+            </p>
+          )}
+        </div>
       )}
 
       <SubmitButton variant="primary" label="Log Case" loadingLabel="Logging…" />

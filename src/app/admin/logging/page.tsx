@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { Clock, CheckCircle, XCircle } from "lucide-react";
 import LogCaseForm from "./LogCaseForm";
 import BatchUploadActions from "./BatchUploadActions";
+import UploadPreviewModal from "./UploadPreviewModal";
 import { rejectUpload } from "./actions";
 import SubmitButton from "@/components/ui/SubmitButton";
 
@@ -142,6 +143,7 @@ export default async function LoggingPage({
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
+                          <UploadPreviewModal uploadId={u.id} fileName={u.file_name} />
                           <span className="flex items-center gap-1 text-xs capitalize text-(--text-secondary)">
                             {STATUS_ICON[u.status as keyof typeof STATUS_ICON]}
                             {u.status}

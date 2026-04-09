@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 export async function logCase(formData: FormData) {
   const studentId = formData.get("student_id") as string;
@@ -61,8 +62,37 @@ export async function logCase(formData: FormData) {
     details: { student_id: studentId, case_type_id: caseTypeId, date },
   });
 
+  // Auto-complete a matching open assignment (same student + case type + date)
+  let assignmentCompleted = false;
+  const { data: matchingAssignment } = await supabase
+    .from("assignments")
+    .select("id")
+    .eq("student_id", studentId)
+    .eq("case_type_id", caseTypeId)
+    .eq("scheduled_date", date)
+    .in("status", ["assigned", "cancel_requested"])
+    .limit(1)
+    .maybeSingle();
+
+  if (matchingAssignment) {
+    const { error: updateErr } = await supabase
+      .from("assignments")
+      .update({ status: "completed", updated_at: new Date().toISOString() })
+      .eq("id", matchingAssignment.id);
+    if (!updateErr) {
+      assignmentCompleted = true;
+      await supabase.from("audit_logs").insert({
+        action_type: "assignment_completed",
+        performed_by: user.id,
+        target_table: "assignments",
+        target_id: matchingAssignment.id,
+        details: { auto_completed_via: "case_log", case_log_id: caseLog.id },
+      });
+    }
+  }
+
   revalidatePath("/admin/logging");
-  return { success: true };
+  return { success: true, assignmentCompleted };
 }
 
 export async function rejectUpload(formData: FormData) {
@@ -104,4 +134,39 @@ export async function batchUpdateUploads(uploadIds: string[], status: "processed
 
   revalidatePath("/admin/logging");
   return { success: true, count: uploadIds.length };
+}
+
+/** Generate a signed preview URL for an upload (admin only). */
+export async function getUploadPreviewUrl(uploadId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized." };
+
+  // Verify caller is admin
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "admin") return { error: "Forbidden." };
+
+  // Fetch file_path from uploads table
+  const { data: upload, error: fetchErr } = await supabase
+    .from("uploads")
+    .select("file_path")
+    .eq("id", uploadId)
+    .single();
+  if (fetchErr || !upload) return { error: "Upload not found." };
+
+  // Use service client to bypass storage RLS
+  const service = createServiceClient();
+  const { data, error } = await service.storage
+    .from("case-uploads")
+    .createSignedUrl(upload.file_path, 3600); // 1 hour
+
+  if (error || !data?.signedUrl) return { error: "Could not generate preview URL." };
+
+  return { url: data.signedUrl };
 }
