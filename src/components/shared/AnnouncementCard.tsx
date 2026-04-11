@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useRef, useEffect } from "react";
+import { useActionState, useState } from "react";
 import { MessageCircle, Send, Trash2, Pencil, ChevronDown, ChevronUp } from "lucide-react";
 import { addComment, deleteCommentAction, editComment } from "@/app/feed/actions";
 
@@ -44,10 +44,11 @@ function CommentItem({
     comment.user_id === currentUserId || currentUserRole === "admin";
   const deleteWithId = deleteCommentAction.bind(null, comment.id);
 
-  // Can edit own comments within 15 minutes
+  // Can edit own comments within 15 minutes — captured once on mount via lazy useState
+  const [mountedAt] = useState<number>(() => Date.now());
   const createdAt = new Date(comment.created_at).getTime();
   const fifteenMin = 15 * 60 * 1000;
-  const canEdit = comment.user_id === currentUserId && (Date.now() - createdAt) < fifteenMin;
+  const canEdit = comment.user_id === currentUserId && (mountedAt - createdAt) < fifteenMin;
 
   const handleEdit = async () => {
     setIsPending(true);
@@ -143,16 +144,15 @@ function CommentForm({ announcementId }: { announcementId: string }) {
   const [state, formAction] = useActionState(addComment, { error: null });
   const [key, setKey] = useState(0);
   const [chars, setChars] = useState(0);
-  const prevStateRef = useRef(state);
+  const [prevState, setPrevState] = useState(state);
 
-  useEffect(() => {
-    if (prevStateRef.current !== state && !state.error) {
+  if (prevState !== state) {
+    setPrevState(state);
+    if (!state.error) {
       setKey((k) => k + 1);
       setChars(0);
     }
-    prevStateRef.current = state;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
+  }
 
   return (
     <form key={key} action={formAction} className="flex gap-2 mt-3">

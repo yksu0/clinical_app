@@ -80,7 +80,7 @@ export default function RequirementOverrides({
                 >
                   <input type="hidden" name="student_id" value={studentId} />
                   <input type="hidden" name="case_type_id" value={ct.id} />
-                  <span className="text-xs text-(--text-secondary) min-w-[120px] truncate">
+                  <span className="text-xs text-(--text-secondary) min-w-30 truncate">
                     {ct.name}
                   </span>
                   <span className="text-[10px] text-(--text-muted) shrink-0">
@@ -92,7 +92,7 @@ export default function RequirementOverrides({
                         → {existing.adjusted_count}
                       </span>
                       {existing.reason && (
-                        <span className="text-[10px] text-(--text-muted) truncate max-w-[120px]" title={existing.reason}>
+                        <span className="text-[10px] text-(--text-muted) truncate max-w-30" title={existing.reason}>
                           ({existing.reason})
                         </span>
                       )}

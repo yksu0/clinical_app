@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -25,12 +25,10 @@ function CINavContent({
   displayName,
   role,
   onNav,
-  onClose,
 }: {
   displayName: string;
   role: string;
   onNav?: () => void;
-  onClose?: () => void;
 }) {
   const pathname = usePathname();
 
@@ -99,10 +97,12 @@ export default function CINav({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(pathname);
 
-  useEffect(() => {
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
     setOpen(false);
-  }, [pathname]);
+  }
 
   const brand = (
     <div className="flex h-16 items-center gap-2.5 border-b border-border px-5">

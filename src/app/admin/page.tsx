@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { Users, ClipboardList, Upload, AlertTriangle, MapPin, BarChart3, TrendingUp } from "lucide-react";
+import { Users, ClipboardList, Upload, AlertTriangle, MapPin, BarChart3 } from "lucide-react";
 
 const PAGE_SIZE = 25;
 
@@ -480,7 +480,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                             </span>
                           )}
                         </span>
-                        <div className="h-1.5 w-full rounded-full bg-white/10 min-w-[60px]">
+                        <div className="h-1.5 w-full rounded-full bg-white/10 min-w-15">
                           <div
                             className={`h-1.5 rounded-full transition-all ${
                               s.completionPct >= 100

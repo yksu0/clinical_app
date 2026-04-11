@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 function escapeCsv(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return "";
@@ -14,7 +14,7 @@ function buildRow(values: (string | number | null | undefined)[]): string {
   return values.map(escapeCsv).join(",");
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const supabase = await createClient();
   const {
     data: { user },

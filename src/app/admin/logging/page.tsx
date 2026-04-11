@@ -4,6 +4,7 @@ import { Clock, CheckCircle, XCircle } from "lucide-react";
 import LogCaseForm from "./LogCaseForm";
 import BatchUploadActions from "./BatchUploadActions";
 import UploadPreviewModal from "./UploadPreviewModal";
+import StudentSelector from "./StudentSelector";
 import { rejectUpload } from "./actions";
 import SubmitButton from "@/components/ui/SubmitButton";
 
@@ -62,9 +63,17 @@ export default async function LoggingPage({
   const allUploads = uploads ?? [];
 
   return (
-    <div className="flex h-full gap-6">
-      {/* Left: Student list */}
-      <aside className="flex w-64 shrink-0 flex-col gap-2 overflow-y-auto">
+    <div className="flex flex-col gap-4 md:flex-row md:gap-6 md:h-full">
+      {/* Mobile: dropdown student selector */}
+      <div className="md:hidden">
+        <StudentSelector
+          students={studentList}
+          selectedId={selectedStudentId ?? null}
+        />
+      </div>
+
+      {/* Desktop: sidebar student list */}
+      <aside className="hidden md:flex w-64 shrink-0 flex-col gap-2 overflow-y-auto">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-(--text-secondary)">
           Students
         </h2>
@@ -92,18 +101,18 @@ export default async function LoggingPage({
         )}
       </aside>
 
-      {/* Right: Detail panel */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Detail panel */}
+      <div className="flex-1 min-w-0 overflow-y-auto">
         {!selectedStudent ? (
-          <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border">
+          <div className="flex h-48 md:h-64 items-center justify-center rounded-xl border border-dashed border-border">
             <p className="text-sm text-(--text-muted)">
               Select a student to begin logging
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <div>
-              <h1 className="text-xl font-bold text-foreground">
+              <h1 className="text-lg md:text-xl font-bold text-foreground">
                 {selectedStudent.full_name}
               </h1>
               {selectedStudent.section && (
@@ -113,7 +122,7 @@ export default async function LoggingPage({
               )}
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
               {/* Uploads panel */}
               <section>
                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-(--text-secondary)">
@@ -124,7 +133,7 @@ export default async function LoggingPage({
                 <BatchUploadActions uploads={allUploads} />
 
                 {allUploads.length === 0 ? (
-                  <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-12 mt-2">
+                  <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-8 md:py-12 mt-2">
                     <p className="text-xs text-(--text-muted)">No uploads yet</p>
                   </div>
                 ) : (
@@ -132,9 +141,9 @@ export default async function LoggingPage({
                     {allUploads.filter((u) => u.status !== "pending").map((u) => (
                       <li
                         key={u.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3"
+                        className="flex items-center justify-between gap-2 sm:gap-3 rounded-xl border border-border bg-surface px-3 sm:px-4 py-2.5 sm:py-3"
                       >
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-foreground">
                             {u.file_name}
                           </p>
@@ -142,11 +151,11 @@ export default async function LoggingPage({
                             {format(new Date(u.uploaded_at), "MMM d, yyyy · h:mm a")}
                           </p>
                         </div>
-                        <div className="flex shrink-0 items-center gap-2">
+                        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                           <UploadPreviewModal uploadId={u.id} fileName={u.file_name} />
                           <span className="flex items-center gap-1 text-xs capitalize text-(--text-secondary)">
                             {STATUS_ICON[u.status as keyof typeof STATUS_ICON]}
-                            {u.status}
+                            <span className="hidden sm:inline">{u.status}</span>
                           </span>
                           {u.status === "pending" && (
                             <form action={rejectUpload}>
@@ -166,7 +175,7 @@ export default async function LoggingPage({
                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-(--text-secondary)">
                   Log a Case
                 </h2>
-                <div className="rounded-xl border border-border bg-surface p-5">
+                <div className="rounded-xl border border-border bg-surface p-4 sm:p-5">
                   <LogCaseForm
                     studentId={selectedStudentId!}
                     caseTypes={caseTypes ?? []}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { logout } from "@/lib/actions/auth";
 import { LayoutDashboard, Upload, CalendarClock, ClipboardList, Menu, X, Rss } from "lucide-react";
 
@@ -17,10 +17,12 @@ const NAV = [
 export default function StudentNav({ displayName }: { displayName: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(pathname);
 
-  useEffect(() => {
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
     setOpen(false);
-  }, [pathname]);
+  }
 
   return (
     <header className="shrink-0 border-b border-border bg-surface">
