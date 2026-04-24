@@ -12,10 +12,9 @@ export async function sendAssignmentEmail(
   details: {
     caseTypeName: string;
     locationName: string;
+    shiftName?: string | null;
     scheduledDate: string;
     endDate?: string | null;
-    startTime?: string | null;
-    endTime?: string | null;
     notes?: string | null;
   }
 ) {
@@ -40,9 +39,7 @@ export async function sendAssignmentEmail(
       ? ` – ${new Date(details.endDate).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`
       : "";
 
-    const timeStr = details.startTime
-      ? `\nTime: ${details.startTime.slice(0, 5)}${details.endTime ? `–${details.endTime.slice(0, 5)}` : ""}`
-      : "";
+    const timeStr = details.shiftName ? `\nShift: ${details.shiftName}` : "";
 
     const serviceClient = createServiceClient();
     await serviceClient.auth.admin.inviteUserByEmail(student.email, {
