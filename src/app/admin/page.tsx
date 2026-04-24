@@ -66,7 +66,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     supabase.from("requirements").select("case_type_id, required_count"),
     supabase
       .from("case_logs")
-      .select("student_id, case_type_id, location_id, date, locations(name)"),
+      .select("student_id, case_type_id, area_of_duty_id, date, areas_of_duty(name)"),
     supabase
       .from("uploads")
       .select("student_id, status, uploaded_at"),
@@ -192,7 +192,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const locationCountMap: Record<string, number> = {};
   for (const log of allLogs) {
     const locName =
-      (log.locations as unknown as { name: string } | null)?.name ?? "Unknown";
+      (log.areas_of_duty as unknown as { name: string } | null)?.name ?? "Unknown";
     locationCountMap[locName] = (locationCountMap[locName] ?? 0) + 1;
   }
   const locationEntries = Object.entries(locationCountMap)
@@ -242,9 +242,9 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   type LogRow = {
     student_id: string;
     case_type_id: string;
-    location_id: string;
+    area_of_duty_id: string;
     date: string;
-    locations: { name: string } | null;
+    areas_of_duty: { name: string } | null;
   };
 
   const selectedLogs: LogRow[] = selectedStudentId
@@ -724,12 +724,12 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             )}
           </div>
 
-          {/* Location Distribution */}
+          {/* Area of Duty Distribution */}
           <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-3">
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-accent" />
               <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                Top Locations
+                Top Areas of Duty
               </h2>
             </div>
             {locationEntries.length === 0 ? (
