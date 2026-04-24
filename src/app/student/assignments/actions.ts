@@ -27,7 +27,7 @@ export async function requestCancelAssignment(formData: FormData) {
     return { error: "Assignment not found." };
   }
 
-  if (assignment.status !== "assigned") {
+  if (assignment.status !== "scheduled") {
     return { error: "Only open assignments can be cancelled." };
   }
 
