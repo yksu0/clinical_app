@@ -19,7 +19,7 @@ export interface CaseType {
   created_at: string;
 }
 
-export interface Location {
+export interface AreaOfDuty {
   id: string;
   name: string;
   is_active: boolean;
@@ -37,7 +37,7 @@ export interface Assignment {
   id: string;
   student_id: string;
   case_type_id: string;
-  location_id: string;
+  area_of_duty_id: string;
   scheduled_date: string;
   status: "assigned" | "completed" | "missed";
   assigned_by: string;
@@ -59,7 +59,7 @@ export interface CaseLog {
   id: string;
   student_id: string;
   case_type_id: string;
-  location_id: string;
+  area_of_duty_id: string;
   upload_id: string | null;
   date: string;
   notes: string | null;
