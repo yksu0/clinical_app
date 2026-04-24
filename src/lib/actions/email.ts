@@ -55,7 +55,7 @@ export async function sendAssignmentEmail(
     // Instead, we'll log the notification attempt for now.
     // When SMTP is working, this can be upgraded to use an edge function or nodemailer.
 
-    const body = `Hi ${student.full_name},\n\nYou have been assigned a new clinical rotation:\n\nCase Type: ${details.caseTypeName}\nLocation: ${details.locationName}\nDate: ${dateStr}${endDateStr}${timeStr}${details.notes ? `\nNotes: ${details.notes}` : ""}\n\nPlease check your assignments page for full details.\n\nClinical App`;
+    const body = `Hi ${student.full_name},\n\nYou have been assigned a new clinical rotation:\n\nCase Type: ${details.caseTypeName}\nArea of Duty: ${details.locationName}\nDate: ${dateStr}${endDateStr}${timeStr}${details.notes ? `\nNotes: ${details.notes}` : ""}\n\nPlease check your assignments page for full details.\n\nClinical App`;
 
     // Log the notification (will actually send when SMTP is configured)
     await supabase.from("audit_logs").insert({
