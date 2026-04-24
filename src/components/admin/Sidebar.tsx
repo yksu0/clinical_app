@@ -35,7 +35,7 @@ const NAV = [
     icon: Settings,
     children: [
       { href: "/admin/config/case-types", label: "Case Types" },
-      { href: "/admin/config/locations", label: "Locations" },
+      { href: "/admin/config/areas-of-duty", label: "Areas of Duty" },
       { href: "/admin/config/requirements", label: "Requirements" },
     ],
   },
