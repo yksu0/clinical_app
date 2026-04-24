@@ -33,11 +33,30 @@ export interface Requirement {
   created_at: string;
 }
 
+export interface Shift {
+  id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Rotation {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  inclusive_days: number[];
+  created_by: string | null;
+  created_at: string;
+}
+
 export interface Assignment {
   id: string;
   student_id: string;
   case_type_id: string;
   area_of_duty_id: string;
+  shift_id: string | null;
+  rotation_id: string | null;
   scheduled_date: string;
   status: "assigned" | "completed" | "missed";
   assigned_by: string;
@@ -60,6 +79,7 @@ export interface CaseLog {
   student_id: string;
   case_type_id: string;
   area_of_duty_id: string;
+  rotation_id: string | null;
   upload_id: string | null;
   date: string;
   notes: string | null;
