@@ -26,7 +26,7 @@ export default async function LoggingPage({
   const [
     { data: students },
     { data: caseTypes },
-    { data: locations },
+    { data: areasOfDuty },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -40,7 +40,7 @@ export default async function LoggingPage({
       .eq("is_active", true)
       .order("name"),
     supabase
-      .from("locations")
+      .from("areas_of_duty")
       .select("id, name")
       .eq("is_active", true)
       .order("name"),
@@ -179,7 +179,7 @@ export default async function LoggingPage({
                   <LogCaseForm
                     studentId={selectedStudentId!}
                     caseTypes={caseTypes ?? []}
-                    locations={locations ?? []}
+                    areasOfDuty={areasOfDuty ?? []}
                     uploads={pendingUploads}
                   />
                 </div>
