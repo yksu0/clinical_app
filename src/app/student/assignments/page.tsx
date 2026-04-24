@@ -4,21 +4,19 @@ import CancelRequestForm from "./CancelRequestForm";
 
 type Assignment = {
   id: string;
-  case_type_id: string;
   area_of_duty_id: string;
   scheduled_date: string;
   end_date: string | null;
-  start_time: string | null;
-  end_time: string | null;
-  status: "assigned" | "completed" | "missed" | "cancel_requested" | "cancelled";
+  shift_id: string | null;
+  shifts: { name: string } | null;
+  status: "scheduled" | "completed" | "missed" | "cancel_requested" | "cancelled";
   notes: string | null;
   cancellation_reason: string | null;
-  case_types: { name: string } | null;
   areas_of_duty: { name: string } | null;
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  assigned: "bg-accent/20 text-accent",
+  scheduled: "bg-accent/20 text-accent",
   completed: "bg-green-500/20 text-green-400",
   missed: "bg-red-500/20 text-red-400",
   cancel_requested: "bg-amber-500/20 text-amber-400",
@@ -36,15 +34,15 @@ export default async function StudentAssignmentsPage() {
   const { data } = await supabase
     .from("assignments")
     .select(
-      "id, case_type_id, area_of_duty_id, scheduled_date, end_date, start_time, end_time, status, notes, cancellation_reason, case_types(name), areas_of_duty(name)"
+      "id, area_of_duty_id, shift_id, scheduled_date, end_date, status, notes, cancellation_reason, areas_of_duty(name), shifts(name)"
     )
     .eq("student_id", user.id)
     .order("scheduled_date", { ascending: false });
 
   const assignments: Assignment[] = (data ?? []) as unknown as Assignment[];
 
-  const open = assignments.filter((a) => a.status === "assigned" || a.status === "cancel_requested");
-  const past = assignments.filter((a) => a.status !== "assigned" && a.status !== "cancel_requested");
+  const open = assignments.filter((a) => a.status === "scheduled" || a.status === "cancel_requested");
+  const past = assignments.filter((a) => a.status !== "scheduled" && a.status !== "cancel_requested");
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
@@ -96,15 +94,14 @@ function AssignmentCard({ assignment: a }: { assignment: Assignment }) {
     <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-start justify-between gap-4">
       <div className="space-y-1 min-w-0">
         <p className="text-sm font-semibold text-white truncate">
-          {a.case_types?.name ?? "Unknown Case Type"}
+          {a.areas_of_duty?.name ?? "Unknown Area of Duty"}
         </p>
         <p className="text-xs text-white/50">
-          {a.areas_of_duty?.name ?? "Unknown Area of Duty"} &middot; {dateStr}
+          {dateStr}
           {a.end_date && a.end_date !== a.scheduled_date && (
             <> – {new Date(a.end_date).toLocaleDateString("en-AU", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}</>
           )}
-          {a.start_time && <> {a.start_time.slice(0, 5)}</>}
-          {a.end_time && <>–{a.end_time.slice(0, 5)}</>}
+          {a.shifts?.name && <> · {a.shifts.name}</>}
         </p>
         {a.notes && (
           <p className="text-xs text-white/40 mt-1 line-clamp-2">{a.notes}</p>
@@ -114,7 +111,7 @@ function AssignmentCard({ assignment: a }: { assignment: Assignment }) {
             Cancel reason: {a.cancellation_reason}
           </p>
         )}
-        {a.status === "assigned" && (
+        {a.status === "scheduled" && (
           <CancelRequestForm assignmentId={a.id} />
         )}
       </div>
