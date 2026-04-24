@@ -5,7 +5,7 @@ import CancelRequestForm from "./CancelRequestForm";
 type Assignment = {
   id: string;
   case_type_id: string;
-  location_id: string;
+  area_of_duty_id: string;
   scheduled_date: string;
   end_date: string | null;
   start_time: string | null;
@@ -14,7 +14,7 @@ type Assignment = {
   notes: string | null;
   cancellation_reason: string | null;
   case_types: { name: string } | null;
-  locations: { name: string } | null;
+  areas_of_duty: { name: string } | null;
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -36,7 +36,7 @@ export default async function StudentAssignmentsPage() {
   const { data } = await supabase
     .from("assignments")
     .select(
-      "id, case_type_id, location_id, scheduled_date, end_date, start_time, end_time, status, notes, cancellation_reason, case_types(name), locations(name)"
+      "id, case_type_id, area_of_duty_id, scheduled_date, end_date, start_time, end_time, status, notes, cancellation_reason, case_types(name), areas_of_duty(name)"
     )
     .eq("student_id", user.id)
     .order("scheduled_date", { ascending: false });
@@ -99,7 +99,7 @@ function AssignmentCard({ assignment: a }: { assignment: Assignment }) {
           {a.case_types?.name ?? "Unknown Case Type"}
         </p>
         <p className="text-xs text-white/50">
-          {a.locations?.name ?? "Unknown Location"} &middot; {dateStr}
+          {a.areas_of_duty?.name ?? "Unknown Area of Duty"} &middot; {dateStr}
           {a.end_date && a.end_date !== a.scheduled_date && (
             <> – {new Date(a.end_date).toLocaleDateString("en-AU", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}</>
           )}
