@@ -6,7 +6,7 @@ type CaseLog = {
   date: string;
   notes: string | null;
   case_types: { name: string } | null;
-  locations: { name: string } | null;
+  areas_of_duty: { name: string } | null;
 };
 
 export default async function StudentHistoryPage() {
@@ -19,7 +19,7 @@ export default async function StudentHistoryPage() {
 
   const { data } = await supabase
     .from("case_logs")
-    .select("id, date, notes, case_types(name), locations(name)")
+    .select("id, date, notes, case_types(name), areas_of_duty(name)")
     .eq("student_id", user.id)
     .order("date", { ascending: false });
 
@@ -49,7 +49,7 @@ export default async function StudentHistoryPage() {
               Case Type
             </span>
             <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">
-              Location
+              Area of Duty
             </span>
             <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">
               Date
@@ -75,7 +75,7 @@ export default async function StudentHistoryPage() {
                     {log.case_types?.name ?? "—"}
                   </span>
                   <span className="text-sm text-white/70 truncate">
-                    {log.locations?.name ?? "—"}
+                    {log.areas_of_duty?.name ?? "—"}
                   </span>
                   <span className="text-sm text-white/50">{dateStr}</span>
                   {log.notes && (
