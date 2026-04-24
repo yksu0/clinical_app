@@ -23,12 +23,12 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
       supabase.from("requirements").select("case_type_id, required_count"),
       supabase
         .from("case_logs")
-        .select("id, date, notes, case_type_id, case_types(name), locations(name)")
+        .select("id, date, notes, case_type_id, case_types(name), areas_of_duty(name)")
         .eq("student_id", id)
         .order("date", { ascending: false }),
       supabase
         .from("assignments")
-        .select("id, scheduled_date, end_date, start_time, end_time, status, notes, case_types(name), locations(name)")
+        .select("id, scheduled_date, end_date, start_time, end_time, status, notes, case_types(name), areas_of_duty(name)")
         .eq("student_id", id)
         .order("scheduled_date", { ascending: false }),
       supabase
@@ -80,7 +80,7 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
     notes: string | null;
     case_type_id: string;
     case_types: { name: string } | null;
-    locations: { name: string } | null;
+    areas_of_duty: { name: string } | null;
   };
 
   type AssignmentRow = {
@@ -92,7 +92,7 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
     status: string;
     notes: string | null;
     case_types: { name: string } | null;
-    locations: { name: string } | null;
+    areas_of_duty: { name: string } | null;
   };
 
   const typedLogs = caseLogs as unknown as CaseLogRow[];
@@ -251,7 +251,7 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
                     {log.case_types?.name ?? "—"}
                   </span>
                   <span className="text-sm text-(--text-secondary)">
-                    {log.locations?.name ?? "—"}
+                    {log.areas_of_duty?.name ?? "—"}
                   </span>
                   <span className="text-sm text-(--text-muted) text-right">
                     {log.date
@@ -293,7 +293,7 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
                     {a.case_types?.name ?? "—"}
                   </p>
                   <p className="text-xs text-(--text-muted)">
-                    {a.locations?.name ?? "—"} &middot;{" "}
+                    {a.areas_of_duty?.name ?? "—"} &middot;{" "}
                     {a.scheduled_date
                       ? new Date(a.scheduled_date).toLocaleDateString(
                           "en-AU",
