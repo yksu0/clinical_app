@@ -18,6 +18,7 @@ import {
   Menu,
   X,
   Rss,
+  ClipboardCheck,
 } from "lucide-react";
 import { logout } from "@/lib/actions/auth";
 
@@ -25,6 +26,7 @@ const NAV = [
   { href: "/feed", label: "Feed", icon: Rss },
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/logging", label: "Case Logging", icon: ClipboardList },
+  { href: "/admin/cases/review", label: "Case Review", icon: ClipboardCheck },
   { href: "/admin/assignments", label: "Assignments", icon: CalendarPlus },
   { href: "/admin/students", label: "Students", icon: GraduationCap },
   { href: "/admin/roster", label: "Student Roster", icon: Users },
