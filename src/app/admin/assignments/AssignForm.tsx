@@ -6,7 +6,7 @@ import type { ConflictWarning } from "./actions";
 import SubmitButton from "@/components/ui/SubmitButton";
 
 type CaseType = { id: string; name: string };
-type Location = { id: string; name: string };
+type AreaOfDuty = { id: string; name: string };
 type RecommendedStudent = {
   id: string;
   full_name: string;
@@ -21,7 +21,7 @@ type RecommendedStudent = {
 
 interface Props {
   caseTypes: CaseType[];
-  locations: Location[];
+  areasOfDuty: AreaOfDuty[];
   recommended: RecommendedStudent[];
   selectedCaseTypeId?: string;
   quickStats: { needCase: number; completedPct: number; totalStudents: number };
@@ -39,7 +39,7 @@ const PRIORITY_LABEL = {
 
 type SortKey = "priority" | "total_cases" | "case_count" | "last_assigned" | "location_count";
 
-export default function AssignForm({ caseTypes, locations, recommended, selectedCaseTypeId, quickStats, semesterWindow }: Props) {
+export default function AssignForm({ caseTypes, areasOfDuty, recommended, selectedCaseTypeId, quickStats, semesterWindow }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("priority");
@@ -137,13 +137,13 @@ export default function AssignForm({ caseTypes, locations, recommended, selected
   const state = selected.size > 1 ? bulkState : singleState;
 
   const handleCheckConflicts = useCallback(
-    (date: string, locationId: string) => {
-      if (!date || !locationId || selected.size === 0) {
+    (date: string, areaOfDutyId: string) => {
+      if (!date || !areaOfDutyId || selected.size === 0) {
         setWarnings([]);
         return;
       }
       startTransition(async () => {
-        const w = await checkConflicts(Array.from(selected), date, locationId);
+        const w = await checkConflicts(Array.from(selected), date, areaOfDutyId);
         setWarnings(w);
       });
     },
@@ -203,10 +203,10 @@ export default function AssignForm({ caseTypes, locations, recommended, selected
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-              Location <span className="text-(--status-rejected)">*</span>
+              Area of Duty <span className="text-(--status-rejected)">*</span>
             </label>
             <select
-              name="location_id"
+              name="area_of_duty_id"
               required
               onChange={(e) => {
                 const dateInput = document.querySelector<HTMLInputElement>("input[name=scheduled_date]");
@@ -214,8 +214,8 @@ export default function AssignForm({ caseTypes, locations, recommended, selected
               }}
               className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
             >
-              <option value="">Select location...</option>
-              {locations.map((l) => (
+              <option value="">Select area of duty...</option>
+              {areasOfDuty.map((l) => (
                 <option key={l.id} value={l.id}>{l.name}</option>
               ))}
             </select>
@@ -237,7 +237,7 @@ export default function AssignForm({ caseTypes, locations, recommended, selected
               min={semesterWindow?.start ?? undefined}
               max={semesterWindow?.end ?? undefined}
               onChange={(e) => {
-                const locSelect = document.querySelector<HTMLSelectElement>("select[name=location_id]");
+                const locSelect = document.querySelector<HTMLSelectElement>("select[name=area_of_duty_id]");
                 if (locSelect?.value) handleCheckConflicts(e.target.value, locSelect.value);
                 // Warn if outside semester window
                 if (semesterWindow && e.target.value) {
@@ -377,7 +377,7 @@ export default function AssignForm({ caseTypes, locations, recommended, selected
             <option value="case_count">Sort: Least exposure</option>
             <option value="total_cases">Sort: Lowest total</option>
             <option value="last_assigned">Sort: Least recent</option>
-            <option value="location_count">Sort: Most at location</option>
+            <option value="location_count">Sort: Most at this area</option>
           </select>
           <select
             value={filterMode}
