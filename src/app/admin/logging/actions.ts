@@ -8,11 +8,11 @@ export async function logCase(formData: FormData) {
   const studentId = formData.get("student_id") as string;
   const uploadId = (formData.get("upload_id") as string) || null;
   const caseTypeId = formData.get("case_type_id") as string;
-  const locationId = formData.get("location_id") as string;
+  const areaOfDutyId = formData.get("area_of_duty_id") as string;
   const date = formData.get("date") as string;
   const notes = ((formData.get("notes") as string) ?? "").trim() || null;
 
-  if (!studentId || !caseTypeId || !locationId || !date) {
+  if (!studentId || !caseTypeId || !areaOfDutyId || !date) {
     return { error: "All fields are required." };
   }
 
@@ -29,7 +29,7 @@ export async function logCase(formData: FormData) {
     .insert({
       student_id: studentId,
       case_type_id: caseTypeId,
-      location_id: locationId,
+      area_of_duty_id: areaOfDutyId,
       upload_id: uploadId,
       date,
       notes,
