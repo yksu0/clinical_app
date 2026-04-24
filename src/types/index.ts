@@ -53,12 +53,11 @@ export interface Rotation {
 export interface Assignment {
   id: string;
   student_id: string;
-  case_type_id: string;
   area_of_duty_id: string;
   shift_id: string | null;
   rotation_id: string | null;
   scheduled_date: string;
-  status: "assigned" | "completed" | "missed";
+  status: "scheduled" | "completed" | "missed" | "cancelled" | "cancel_requested";
   assigned_by: string;
   created_at: string;
   updated_at: string;
