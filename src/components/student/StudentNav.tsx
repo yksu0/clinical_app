@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { logout } from "@/lib/actions/auth";
-import { LayoutDashboard, Upload, CalendarClock, ClipboardList, Menu, X, Rss, FilePlus } from "lucide-react";
+import { LayoutDashboard, Upload, CalendarClock, ClipboardList, Menu, X, Rss, FilePlus, BookUser } from "lucide-react";
 
 const NAV = [
   { href: "/feed", label: "Feed", icon: Rss },
@@ -13,6 +13,7 @@ const NAV = [
   { href: "/student/assignments", label: "Assignments", icon: CalendarClock },
   { href: "/student/cases", label: "My Cases", icon: FilePlus },
   { href: "/student/history", label: "Case History", icon: ClipboardList },
+  { href: "/student/directory", label: "Directory", icon: BookUser },
 ];
 
 export default function StudentNav({ displayName }: { displayName: string }) {
