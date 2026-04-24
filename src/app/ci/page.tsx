@@ -22,7 +22,7 @@ export default async function CIDashboard() {
     supabase.from("requirements").select("case_type_id, required_count"),
     supabase
       .from("case_logs")
-      .select("student_id, case_type_id, locations(name)"),
+      .select("student_id, case_type_id, areas_of_duty(name)"),
     supabase
       .from("assignments")
       .select("student_id, status"),
@@ -58,7 +58,7 @@ export default async function CIDashboard() {
   const countByLocation: Record<string, number> = {};
   for (const log of allLogs) {
     const loc =
-      (log.locations as unknown as { name: string } | null)?.name ?? "Unknown";
+      (log.areas_of_duty as unknown as { name: string } | null)?.name ?? "Unknown";
     countByLocation[loc] = (countByLocation[loc] ?? 0) + 1;
   }
   const topLocations = Object.entries(countByLocation)
@@ -197,7 +197,7 @@ export default async function CIDashboard() {
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-accent" />
             <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50">
-              Top Locations
+              Top Areas of Duty
             </h2>
           </div>
           {topLocations.length === 0 ? (
