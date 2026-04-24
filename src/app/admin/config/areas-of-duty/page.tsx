@@ -1,21 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
-import { addLocation, renameLocation, toggleLocation } from "./actions";
+import { addAreaOfDuty, renameAreaOfDuty, toggleAreaOfDuty } from "./actions";
 import SubmitButton from "@/components/ui/SubmitButton";
-import type { Location } from "@/types";
+import type { AreaOfDuty } from "@/types";
 
-export default async function LocationsPage() {
+export default async function AreasOfDutyPage() {
   const supabase = await createClient();
   const { data: locations } = await supabase
-    .from("locations")
+    .from("areas_of_duty")
     .select("*")
     .order("name");
 
-  const items = (locations ?? []) as Location[];
+  const items = (locations ?? []) as AreaOfDuty[];
 
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-foreground">Locations</h1>
+        <h1 className="text-xl font-bold text-foreground">Areas of Duty</h1>
         <p className="mt-1 text-sm text-(--text-secondary)">
           Define the hospital areas and units used in case assignments.
         </p>
@@ -23,7 +23,7 @@ export default async function LocationsPage() {
 
       {/* Add form */}
       <form
-        action={addLocation}
+        action={addAreaOfDuty}
         className="mb-6 flex gap-3 rounded-xl border border-border bg-surface p-4"
       >
         <input
@@ -40,13 +40,13 @@ export default async function LocationsPage() {
       <div className="rounded-xl border border-border bg-surface overflow-hidden">
         {items.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-(--text-muted)">
-            No locations yet. Add one above.
+            No areas of duty yet. Add one above.
           </p>
         ) : (
           <ul className="divide-y divide-border">
             {items.map((loc) => (
               <li key={loc.id} className="flex items-center gap-3 px-4 py-3">
-                <form action={renameLocation} className="flex flex-1 gap-2">
+                <form action={renameAreaOfDuty} className="flex flex-1 gap-2">
                   <input type="hidden" name="id" value={loc.id} />
                   <input
                     name="name"
@@ -62,7 +62,7 @@ export default async function LocationsPage() {
                   <SubmitButton label="Save" variant="ghost" />
                 </form>
 
-                <form action={toggleLocation}>
+                <form action={toggleAreaOfDuty}>
                   <input type="hidden" name="id" value={loc.id} />
                   <input
                     type="hidden"
