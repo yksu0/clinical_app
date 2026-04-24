@@ -87,7 +87,7 @@ export async function signup(formData: FormData) {
   // Verify the name exists in the pre-registered roster (case-insensitive)
   const { data: rosterRows } = await supabase
     .from("student_roster")
-    .select("id")
+    .select("id, full_name")
     .ilike("full_name", trimmedName)
     .limit(1);
 
@@ -104,7 +104,7 @@ export async function signup(formData: FormData) {
     email,
     password,
     options: {
-      data: { full_name: trimmedName, roster_id: rosterEntry.id },
+      data: { full_name: rosterEntry.full_name, roster_id: rosterEntry.id },
       emailRedirectTo: `${origin}/auth/callback`,
     },
   });
@@ -118,7 +118,7 @@ export async function signup(formData: FormData) {
     await serviceClient.from("profiles").upsert(
       {
         id: userId,
-        full_name: trimmedName,
+        full_name: rosterEntry.full_name,
         email: email.toLowerCase().trim(),
         roster_id: rosterEntry.id,
         role: "student",

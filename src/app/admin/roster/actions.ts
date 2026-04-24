@@ -5,6 +5,25 @@ import { createClient } from "@/lib/supabase/server";
 
 export type BulkResult = { added: number; skipped: number };
 
+type NameParts = { last_name: string | null; first_name: string | null; middle_initial: string | null };
+
+/** Parse "SURNAME, FIRSTNAME MI." into split columns */
+function parseName(fullName: string): NameParts {
+  const commaIdx = fullName.indexOf(",");
+  if (commaIdx === -1) return { last_name: null, first_name: null, middle_initial: null };
+  const lastName = fullName.slice(0, commaIdx).trim().toUpperCase();
+  const rest = fullName.slice(commaIdx + 1).trim().toUpperCase();
+  const miMatch = rest.match(/^(.*?)\s+([A-Z])\.$/);
+  if (miMatch) return { last_name: lastName, first_name: miMatch[1].trim(), middle_initial: miMatch[2] };
+  return { last_name: lastName, first_name: rest, middle_initial: null };
+}
+
+/** Build canonical "SURNAME, FIRSTNAME MI." from parts */
+function buildFullName(lastName: string, firstName: string, mi: string | null): string {
+  const base = `${lastName.trim().toUpperCase()}, ${firstName.trim().toUpperCase()}`;
+  return mi ? `${base} ${mi.trim().toUpperCase()}.` : base;
+}
+
 /** Bulk-insert multiple students from a pasted list into the whitelist */
 export async function bulkAddToRoster(
   _prev: BulkResult | null,
@@ -14,15 +33,17 @@ export async function bulkAddToRoster(
   if (!raw?.trim()) return { added: 0, skipped: 0 };
 
   const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
-  const parsed: { full_name: string; email: string | null; section: string | null }[] = [];
+  const parsed: { full_name: string; last_name: string | null; first_name: string | null; middle_initial: string | null; email: string | null; section: string | null }[] = [];
 
   for (const line of lines) {
     const parts = line.split("|").map((p) => p.trim());
-    const fullName = parts[0];
-    if (!fullName) continue;
+    const rawName = parts[0];
+    if (!rawName) continue;
     const email = parts[1]?.toLowerCase() || null;
     const section = parts[2] || null;
-    parsed.push({ full_name: fullName, email, section });
+    const { last_name, first_name, middle_initial } = parseName(rawName);
+    const full_name = last_name && first_name ? buildFullName(last_name, first_name, middle_initial) : rawName.toUpperCase();
+    parsed.push({ full_name, last_name, first_name, middle_initial, email, section });
   }
 
   if (parsed.length === 0) return { added: 0, skipped: 0 };
@@ -44,14 +65,25 @@ export async function bulkAddToRoster(
 
 /** Add a student to the pre-registration whitelist */
 export async function addToRoster(formData: FormData) {
-  const fullName = (formData.get("full_name") as string).trim();
-  const email = (formData.get("email") as string).trim().toLowerCase() || null;
-  const section = (formData.get("section") as string).trim() || null;
+  const lastName = (formData.get("last_name") as string ?? "").trim();
+  const firstName = (formData.get("first_name") as string ?? "").trim();
+  const mi = (formData.get("middle_initial") as string ?? "").trim().toUpperCase().charAt(0) || null;
+  const email = (formData.get("email") as string ?? "").trim().toLowerCase() || null;
+  const section = (formData.get("section") as string ?? "").trim() || null;
 
-  if (!fullName) return;
+  if (!lastName || !firstName) return;
+
+  const full_name = buildFullName(lastName, firstName, mi);
 
   const supabase = await createClient();
-  await supabase.from("student_roster").insert({ full_name: fullName, email, section });
+  await supabase.from("student_roster").insert({
+    full_name,
+    last_name: lastName.toUpperCase(),
+    first_name: firstName.toUpperCase(),
+    middle_initial: mi,
+    email,
+    section,
+  });
   revalidatePath("/admin/roster");
 }
 

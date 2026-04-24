@@ -45,19 +45,35 @@ export default function BulkAddForm() {
           className="grid grid-cols-1 gap-3 rounded-b-xl border border-border bg-surface p-4 sm:grid-cols-3"
         >
           <input
-            name="full_name"
+            name="last_name"
             type="text"
             required
-            placeholder="Full name *"
-            className="rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground placeholder-(--text-muted) outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+            placeholder="Last name *"
+            className="rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground placeholder-(--text-muted) outline-none focus:border-accent focus:ring-1 focus:ring-accent uppercase"
           />
           <input
-            name="email"
-            type="email"
-            placeholder="Email (optional)"
-            className="rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground placeholder-(--text-muted) outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+            name="first_name"
+            type="text"
+            required
+            placeholder="First name *"
+            className="rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground placeholder-(--text-muted) outline-none focus:border-accent focus:ring-1 focus:ring-accent uppercase"
           />
           <div className="flex gap-2">
+            <input
+              name="middle_initial"
+              type="text"
+              maxLength={1}
+              placeholder="MI"
+              className="w-14 rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground placeholder-(--text-muted) outline-none focus:border-accent focus:ring-1 focus:ring-accent uppercase"
+            />
+            <input
+              name="email"
+              type="email"
+              placeholder="Email (optional)"
+              className="flex-1 rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground placeholder-(--text-muted) outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+            />
+          </div>
+          <div className="flex gap-2 sm:col-span-3">
             <input
               name="section"
               type="text"
@@ -73,16 +89,18 @@ export default function BulkAddForm() {
           className="rounded-b-xl border border-border bg-surface p-4 space-y-3"
         >
           <p className="text-xs text-(--text-muted)">
-            One student per line. Optionally append email and section separated by{" "}
+            One student per line in{" "}
+            <code className="rounded bg-elevated px-1 py-0.5 font-mono text-accent">SURNAME, FIRSTNAME MI.</code>
+            {" "}format. Optionally append email and section separated by{" "}
             <code className="rounded bg-elevated px-1 py-0.5 font-mono text-accent">|</code>
             {" — "}example:{" "}
-            <code className="font-mono text-accent">Jane Smith | jane@school.edu | A</code>
+            <code className="font-mono text-accent">DELA CRUZ, JUAN A. | juan@school.edu | A</code>
           </p>
           <textarea
             name="names"
             required
             rows={9}
-            placeholder={"John Doe\nJane Smith | jane@school.edu | A\nBob Johnson || B"}
+            placeholder={"DELA CRUZ, JUAN A.\nSANTOS, MARIA C. | maria@school.edu | A\nREYES, PEDRO"}
             className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground placeholder-(--text-muted) outline-none focus:border-accent focus:ring-1 focus:ring-accent resize-y font-mono leading-relaxed"
           />
           {bulkState !== null && (
