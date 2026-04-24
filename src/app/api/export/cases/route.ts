@@ -32,7 +32,7 @@ export async function GET() {
   const { data: logs, error } = await supabase
     .from("case_logs")
     .select(
-      "id, date, notes, profiles(full_name, email, section), case_types(name), locations(name), created_at"
+      "id, date, notes, profiles(full_name, email, section), case_types(name), areas_of_duty(name), created_at"
     )
     .order("date", { ascending: false });
 
@@ -47,7 +47,7 @@ export async function GET() {
     created_at: string;
     profiles: { full_name: string; email: string; section: string | null } | null;
     case_types: { name: string } | null;
-    locations: { name: string } | null;
+    areas_of_duty: { name: string } | null;
   };
 
   const rows = (logs ?? []) as unknown as LogRow[];
@@ -58,7 +58,7 @@ export async function GET() {
     "Student Email",
     "Section",
     "Case Type",
-    "Location",
+    "Area of Duty",
     "Date",
     "Notes",
     "Logged At",
@@ -72,7 +72,7 @@ export async function GET() {
         r.profiles?.email,
         r.profiles?.section,
         r.case_types?.name,
-        r.locations?.name,
+        r.areas_of_duty?.name,
         r.date,
         r.notes,
         r.created_at,
