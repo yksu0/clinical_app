@@ -28,7 +28,7 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
         .order("date", { ascending: false }),
       supabase
         .from("assignments")
-        .select("id, scheduled_date, end_date, start_time, end_time, status, notes, case_types(name), areas_of_duty(name)")
+        .select("id, scheduled_date, end_date, shift_id, status, notes, areas_of_duty(name), shifts(name)")
         .eq("student_id", id)
         .order("scheduled_date", { ascending: false }),
       supabase
@@ -87,19 +87,18 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
     id: string;
     scheduled_date: string;
     end_date: string | null;
-    start_time: string | null;
-    end_time: string | null;
+    shift_id: string | null;
     status: string;
     notes: string | null;
-    case_types: { name: string } | null;
     areas_of_duty: { name: string } | null;
+    shifts: { name: string } | null;
   };
 
   const typedLogs = caseLogs as unknown as CaseLogRow[];
   const typedAssignments = assignments as unknown as AssignmentRow[];
 
   const statusColors: Record<string, string> = {
-    assigned: "bg-accent/20 text-accent",
+    scheduled: "bg-accent/20 text-accent",
     completed: "bg-green-500/20 text-green-400",
     missed: "bg-red-500/20 text-red-400",
     cancelled: "bg-(--text-muted)/20 text-(--text-muted)",
@@ -175,7 +174,7 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
           </div>
           <div className="rounded-lg bg-elevated p-3">
             <p className="text-lg font-bold text-foreground">
-              {typedAssignments.filter((a) => a.status === "assigned").length}
+              {typedAssignments.filter((a) => a.status === "scheduled").length}
             </p>
             <p className="text-xs text-(--text-muted)">Open Assignments</p>
           </div>
@@ -290,10 +289,9 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
               >
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    {a.case_types?.name ?? "—"}
+                    {a.areas_of_duty?.name ?? "—"}
                   </p>
                   <p className="text-xs text-(--text-muted)">
-                    {a.areas_of_duty?.name ?? "—"} &middot;{" "}
                     {a.scheduled_date
                       ? new Date(a.scheduled_date).toLocaleDateString(
                           "en-AU",
@@ -303,8 +301,7 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
                     {a.end_date && a.end_date !== a.scheduled_date && (
                       <> – {new Date(a.end_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}</>
                     )}
-                    {a.start_time && <> {a.start_time.slice(0, 5)}</>}
-                    {a.end_time && <>–{a.end_time.slice(0, 5)}</>}
+                    {a.shifts?.name && <> · {a.shifts.name}</>}
                   </p>
                   {a.notes && (
                     <p className="text-xs text-(--text-muted) mt-1">
