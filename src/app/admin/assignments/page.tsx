@@ -20,10 +20,10 @@ export default async function AssignmentsPage({
   const { case_type: selectedCaseTypeId } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: caseTypes }, { data: locations }, { data: students }] =
+  const [{ data: caseTypes }, { data: areasOfDuty }, { data: students }] =
     await Promise.all([
       supabase.from("case_types").select("id, name").eq("is_active", true).order("name"),
-      supabase.from("locations").select("id, name").eq("is_active", true).order("name"),
+      supabase.from("areas_of_duty").select("id, name").eq("is_active", true).order("name"),
       supabase
         .from("profiles")
         .select("id, full_name, section")
@@ -56,7 +56,7 @@ export default async function AssignmentsPage({
     // All assignments (for last_assigned and location frequency)
     const { data: allAssignments } = await supabase
       .from("assignments")
-      .select("student_id, scheduled_date, location_id, status")
+      .select("student_id, scheduled_date, area_of_duty_id, status")
       .in("status", ["assigned", "completed"]);
 
     // Requirement for selected case type
@@ -133,7 +133,7 @@ export default async function AssignmentsPage({
   const { data: assignments } = await supabase
     .from("assignments")
     .select(
-      "id, scheduled_date, end_date, start_time, end_time, status, notes, cancellation_reason, student:profiles!student_id(full_name), case_type:case_types(name), location:locations(name)"
+      "id, scheduled_date, end_date, start_time, end_time, status, notes, cancellation_reason, student:profiles!student_id(full_name), case_type:case_types(name), location:areas_of_duty(name)"
     )
     .order("scheduled_date", { ascending: false })
     .limit(50);
@@ -183,7 +183,7 @@ export default async function AssignmentsPage({
         {/* Left: form + recommendations */}
         <AssignForm
           caseTypes={caseTypes ?? []}
-          locations={locations ?? []}
+          areasOfDuty={areasOfDuty ?? []}
           recommended={recommended}
           selectedCaseTypeId={selectedCaseTypeId}
           quickStats={quickStats}
