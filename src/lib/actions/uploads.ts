@@ -33,6 +33,7 @@ export async function createUploadRecord(
     file_path: filePath,
     file_name: fileName,
     status: "pending",
+    size_bytes: sizeBytes ?? null,
   });
 
   if (error) throw new Error(error.message);
