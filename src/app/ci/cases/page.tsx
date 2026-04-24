@@ -12,7 +12,7 @@ type CaseLog = {
   student_id: string;
   case_type_id: string;
   case_types: { name: string } | null;
-  locations: { name: string } | null;
+  areas_of_duty: { name: string } | null;
   profiles: { full_name: string } | null;
 };
 
@@ -27,7 +27,7 @@ export default async function CICasesPage({ searchParams }: PageProps) {
     supabase
       .from("case_logs")
       .select(
-        "id, date, notes, student_id, case_type_id, case_types(name), locations(name), profiles(full_name)"
+        "id, date, notes, student_id, case_type_id, case_types(name), areas_of_duty(name), profiles(full_name)"
       )
       .order("date", { ascending: false })
       .limit(200),
@@ -123,7 +123,7 @@ export default async function CICasesPage({ searchParams }: PageProps) {
             Case Type
           </span>
           <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
-            Location
+            Area of Duty
           </span>
           <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
             Date
@@ -151,7 +151,7 @@ export default async function CICasesPage({ searchParams }: PageProps) {
                   {log.case_types?.name ?? "—"}
                 </span>
                 <span className="text-sm text-white/60 truncate">
-                  {log.locations?.name ?? "—"}
+                  {log.areas_of_duty?.name ?? "—"}
                 </span>
                 <span className="text-sm text-white/50">
                   {log.date
