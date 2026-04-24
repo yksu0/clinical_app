@@ -27,7 +27,7 @@ export default async function CIStudentProfilePage({ params }: PageProps) {
         .order("date", { ascending: false }),
       supabase
         .from("assignments")
-        .select("id, scheduled_date, end_date, start_time, end_time, status, case_types(name), areas_of_duty(name)")
+        .select("id, scheduled_date, end_date, shift_id, status, areas_of_duty(name), shifts(name)")
         .eq("student_id", id)
         .order("scheduled_date", { ascending: false }),
     ]);
@@ -75,10 +75,9 @@ export default async function CIStudentProfilePage({ params }: PageProps) {
     id: string;
     scheduled_date: string;
     end_date: string | null;
-    start_time: string | null;
-    end_time: string | null;
+    shift_id: string | null;
+    shifts: { name: string } | null;
     status: string;
-    case_types: { name: string } | null;
     areas_of_duty: { name: string } | null;
   };
 
@@ -232,10 +231,9 @@ export default async function CIStudentProfilePage({ params }: PageProps) {
               >
                 <div>
                   <p className="text-sm font-medium text-white">
-                    {a.case_types?.name ?? "—"}
+                    {a.areas_of_duty?.name ?? "—"}
                   </p>
                   <p className="text-xs text-white/50">
-                    {a.areas_of_duty?.name ?? "—"} &middot;{" "}
                     {a.scheduled_date
                       ? new Date(a.scheduled_date).toLocaleDateString(
                           "en-AU",
@@ -245,8 +243,7 @@ export default async function CIStudentProfilePage({ params }: PageProps) {
                     {a.end_date && a.end_date !== a.scheduled_date && (
                       <> – {new Date(a.end_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}</>
                     )}
-                    {a.start_time && <> {a.start_time.slice(0, 5)}</>}
-                    {a.end_time && <>–{a.end_time.slice(0, 5)}</>}
+                    {a.shifts?.name && <> · {a.shifts.name}</>}
                   </p>
                 </div>
                 <span
