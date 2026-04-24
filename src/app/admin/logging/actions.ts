@@ -11,6 +11,7 @@ export async function logCase(formData: FormData) {
   const areaOfDutyId = formData.get("area_of_duty_id") as string;
   const date = formData.get("date") as string;
   const notes = ((formData.get("notes") as string) ?? "").trim() || null;
+  const rotationId = (formData.get("rotation_id") as string) || null;
 
   if (!studentId || !caseTypeId || !areaOfDutyId || !date) {
     return { error: "All fields are required." };
@@ -30,6 +31,7 @@ export async function logCase(formData: FormData) {
       student_id: studentId,
       case_type_id: caseTypeId,
       area_of_duty_id: areaOfDutyId,
+      rotation_id: rotationId,
       upload_id: uploadId,
       date,
       notes,

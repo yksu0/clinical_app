@@ -27,6 +27,7 @@ export default async function LoggingPage({
     { data: students },
     { data: caseTypes },
     { data: areasOfDuty },
+    { data: rotations },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -44,6 +45,10 @@ export default async function LoggingPage({
       .select("id, name")
       .eq("is_active", true)
       .order("name"),
+    supabase
+      .from("rotations")
+      .select("id, name")
+      .order("start_date", { ascending: false }),
   ]);
 
   const studentList = students ?? [];
@@ -180,6 +185,7 @@ export default async function LoggingPage({
                     studentId={selectedStudentId!}
                     caseTypes={caseTypes ?? []}
                     areasOfDuty={areasOfDuty ?? []}
+                    rotations={rotations ?? []}
                     uploads={pendingUploads}
                   />
                 </div>
