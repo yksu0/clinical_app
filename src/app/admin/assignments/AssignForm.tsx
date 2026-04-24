@@ -7,6 +7,8 @@ import SubmitButton from "@/components/ui/SubmitButton";
 
 type CaseType = { id: string; name: string };
 type AreaOfDuty = { id: string; name: string };
+type Shift = { id: string; name: string };
+type Rotation = { id: string; name: string; start_date: string; end_date: string };
 type RecommendedStudent = {
   id: string;
   full_name: string;
@@ -22,6 +24,8 @@ type RecommendedStudent = {
 interface Props {
   caseTypes: CaseType[];
   areasOfDuty: AreaOfDuty[];
+  shifts: Shift[];
+  rotations: Rotation[];
   recommended: RecommendedStudent[];
   selectedCaseTypeId?: string;
   quickStats: { needCase: number; completedPct: number; totalStudents: number };
@@ -39,7 +43,7 @@ const PRIORITY_LABEL = {
 
 type SortKey = "priority" | "total_cases" | "case_count" | "last_assigned" | "location_count";
 
-export default function AssignForm({ caseTypes, areasOfDuty, recommended, selectedCaseTypeId, quickStats, semesterWindow }: Props) {
+export default function AssignForm({ caseTypes, areasOfDuty, shifts, rotations, recommended, selectedCaseTypeId, quickStats, semesterWindow }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("priority");
@@ -281,24 +285,34 @@ export default function AssignForm({ caseTypes, areasOfDuty, recommended, select
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-              Start Time <span className="text-(--text-muted) font-normal">(optional)</span>
+              Shift
             </label>
-            <input
-              type="time"
-              name="start_time"
+            <select
+              name="shift_id"
               className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-            />
+            >
+              <option value="">No shift assigned</option>
+              {shifts.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
           </div>
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-              End Time <span className="text-(--text-muted) font-normal">(optional)</span>
+              Rotation
             </label>
-            <input
-              type="time"
-              name="end_time"
+            <select
+              name="rotation_id"
               className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-            />
+            >
+              <option value="">No rotation</option>
+              {rotations.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name} ({r.start_date} – {r.end_date})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

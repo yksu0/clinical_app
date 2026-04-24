@@ -20,10 +20,12 @@ export default async function AssignmentsPage({
   const { case_type: selectedCaseTypeId } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: caseTypes }, { data: areasOfDuty }, { data: students }] =
+  const [{ data: caseTypes }, { data: areasOfDuty }, { data: shifts }, { data: rotations }, { data: students }] =
     await Promise.all([
       supabase.from("case_types").select("id, name").eq("is_active", true).order("name"),
       supabase.from("areas_of_duty").select("id, name").eq("is_active", true).order("name"),
+      supabase.from("shifts").select("id, name").eq("is_active", true).order("name"),
+      supabase.from("rotations").select("id, name, start_date, end_date").order("start_date", { ascending: false }),
       supabase
         .from("profiles")
         .select("id, full_name, section")
@@ -133,7 +135,7 @@ export default async function AssignmentsPage({
   const { data: assignments } = await supabase
     .from("assignments")
     .select(
-      "id, scheduled_date, end_date, start_time, end_time, status, notes, cancellation_reason, student:profiles!student_id(full_name), case_type:case_types(name), location:areas_of_duty(name)"
+      "id, scheduled_date, end_date, shift_id, rotation_id, status, notes, cancellation_reason, student:profiles!student_id(full_name), case_type:case_types(name), location:areas_of_duty(name), shift:shifts(name), rotation:rotations(name)"
     )
     .order("scheduled_date", { ascending: false })
     .limit(50);
@@ -184,6 +186,8 @@ export default async function AssignmentsPage({
         <AssignForm
           caseTypes={caseTypes ?? []}
           areasOfDuty={areasOfDuty ?? []}
+          shifts={shifts ?? []}
+          rotations={rotations ?? []}
           recommended={recommended}
           selectedCaseTypeId={selectedCaseTypeId}
           quickStats={quickStats}
@@ -231,8 +235,8 @@ export default async function AssignmentsPage({
                         <p className="text-xs text-(--text-muted)">
                           {format(new Date(a.scheduled_date), "MMM d, yyyy")}
                           {a.end_date && a.end_date !== a.scheduled_date && ` – ${format(new Date(a.end_date), "MMM d, yyyy")}`}
-                          {a.start_time && ` ${a.start_time.slice(0, 5)}`}
-                          {a.end_time && `–${a.end_time.slice(0, 5)}`}
+                          {(a.shift as unknown as { name: string } | null)?.name && ` · ${(a.shift as unknown as { name: string } | null)?.name}`}
+                          {(a.rotation as unknown as { name: string } | null)?.name && ` · ${(a.rotation as unknown as { name: string } | null)?.name}`}
                           {a.notes && ` · ${a.notes}`}
                         </p>
                         {a.cancellation_reason && (

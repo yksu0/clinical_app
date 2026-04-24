@@ -16,8 +16,8 @@ export async function createAssignment(formData: FormData) {
   const areaOfDutyId = formData.get("area_of_duty_id") as string;
   const scheduledDate = formData.get("scheduled_date") as string;
   const endDate = (formData.get("end_date") as string) || null;
-  const startTime = (formData.get("start_time") as string) || null;
-  const endTime = (formData.get("end_time") as string) || null;
+  const shiftId = (formData.get("shift_id") as string) || null;
+  const rotationId = (formData.get("rotation_id") as string) || null;
   const notes = (formData.get("notes") as string) || null;
 
   if (!studentId || !caseTypeId || !areaOfDutyId || !scheduledDate) {
@@ -41,10 +41,10 @@ export async function createAssignment(formData: FormData) {
       student_id: studentId,
       case_type_id: caseTypeId,
       area_of_duty_id: areaOfDutyId,
+      shift_id: shiftId,
+      rotation_id: rotationId,
       scheduled_date: scheduledDate,
       end_date: endDate,
-      start_time: startTime,
-      end_time: endTime,
       assigned_by: user.id,
       status: "assigned",
       notes,
@@ -59,21 +59,21 @@ export async function createAssignment(formData: FormData) {
     performed_by: user.id,
     target_table: "assignments",
     target_id: assignment.id,
-    details: { student_id: studentId, case_type_id: caseTypeId, scheduled_date: scheduledDate, end_date: endDate, start_time: startTime, end_time: endTime },
+    details: { student_id: studentId, case_type_id: caseTypeId, scheduled_date: scheduledDate, end_date: endDate, shift_id: shiftId, rotation_id: rotationId },
   });
 
   // Send email notification (non-blocking)
-  const [{ data: ct }, { data: loc }] = await Promise.all([
+  const [{ data: ct }, { data: loc }, { data: shiftRow }] = await Promise.all([
     supabase.from("case_types").select("name").eq("id", caseTypeId).single(),
     supabase.from("areas_of_duty").select("name").eq("id", areaOfDutyId).single(),
+    shiftId ? supabase.from("shifts").select("name").eq("id", shiftId).single() : Promise.resolve({ data: null }),
   ]);
   sendAssignmentEmail(studentId, {
     caseTypeName: ct?.name ?? "Unknown",
     locationName: loc?.name ?? "Unknown",
+    shiftName: shiftRow?.name ?? null,
     scheduledDate,
     endDate,
-    startTime,
-    endTime,
     notes,
   }).catch(() => {});
 
@@ -87,8 +87,8 @@ export async function bulkAssign(formData: FormData) {
   const areaOfDutyId = formData.get("area_of_duty_id") as string;
   const scheduledDate = formData.get("scheduled_date") as string;
   const endDate = (formData.get("end_date") as string) || null;
-  const startTime = (formData.get("start_time") as string) || null;
-  const endTime = (formData.get("end_time") as string) || null;
+  const shiftId = (formData.get("shift_id") as string) || null;
+  const rotationId = (formData.get("rotation_id") as string) || null;
   const notes = (formData.get("notes") as string) || null;
 
   if (!studentIds || !caseTypeId || !areaOfDutyId || !scheduledDate) {
@@ -112,10 +112,10 @@ export async function bulkAssign(formData: FormData) {
     student_id: sid,
     case_type_id: caseTypeId,
     area_of_duty_id: areaOfDutyId,
+    shift_id: shiftId,
+    rotation_id: rotationId,
     scheduled_date: scheduledDate,
     end_date: endDate,
-    start_time: startTime,
-    end_time: endTime,
     assigned_by: user.id,
     status: "assigned" as const,
     notes,
@@ -136,24 +136,24 @@ export async function bulkAssign(formData: FormData) {
         performed_by: user.id,
         target_table: "assignments",
         target_id: a.id,
-        details: { case_type_id: caseTypeId, scheduled_date: scheduledDate, end_date: endDate, start_time: startTime, end_time: endTime, bulk: true },
+        details: { case_type_id: caseTypeId, scheduled_date: scheduledDate, end_date: endDate, shift_id: shiftId, rotation_id: rotationId, bulk: true },
       })),
     );
   }
 
   // Send email notifications (non-blocking)
-  const [{ data: ct }, { data: loc }] = await Promise.all([
+  const [{ data: ct }, { data: loc }, { data: shiftRow }] = await Promise.all([
     supabase.from("case_types").select("name").eq("id", caseTypeId).single(),
     supabase.from("areas_of_duty").select("name").eq("id", areaOfDutyId).single(),
+    shiftId ? supabase.from("shifts").select("name").eq("id", shiftId).single() : Promise.resolve({ data: null }),
   ]);
   for (const sid of ids) {
     sendAssignmentEmail(sid, {
       caseTypeName: ct?.name ?? "Unknown",
       locationName: loc?.name ?? "Unknown",
+      shiftName: shiftRow?.name ?? null,
       scheduledDate,
       endDate,
-      startTime,
-      endTime,
       notes,
     }).catch(() => {});
   }
