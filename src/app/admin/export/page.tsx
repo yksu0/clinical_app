@@ -12,7 +12,7 @@ export default async function AdminExportPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ExportCard
           title="Case Records"
-          description="All logged cases with student name, case type, location, date, and notes."
+          description="All logged cases with student name, case type, area of duty, date, and notes."
           href="/api/export/cases"
           filename={`case-records-${new Date().toISOString().slice(0, 10)}.csv`}
         />
