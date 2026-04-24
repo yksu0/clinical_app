@@ -5,7 +5,6 @@ import { createAssignment, bulkAssign, checkConflicts } from "./actions";
 import type { ConflictWarning } from "./actions";
 import SubmitButton from "@/components/ui/SubmitButton";
 
-type CaseType = { id: string; name: string };
 type AreaOfDuty = { id: string; name: string };
 type Shift = { id: string; name: string };
 type Rotation = { id: string; name: string; start_date: string; end_date: string };
@@ -13,22 +12,19 @@ type RecommendedStudent = {
   id: string;
   full_name: string;
   section: string | null;
-  case_count: number;
+  total_assignments: number;
   total_cases: number;
-  required_count: number;
   last_assigned: string | null;
-  location_count: number;
+  area_duty_count: number;
   priority: "high" | "medium" | "low";
 };
 
 interface Props {
-  caseTypes: CaseType[];
   areasOfDuty: AreaOfDuty[];
   shifts: Shift[];
   rotations: Rotation[];
   recommended: RecommendedStudent[];
-  selectedCaseTypeId?: string;
-  quickStats: { needCase: number; completedPct: number; totalStudents: number };
+  quickStats: { noAssignments: number; completedPct: number; totalStudents: number };
   semesterWindow: { name: string; start: string; end: string | null } | null;
 }
 
@@ -36,18 +32,18 @@ type ActionState = { error: string | null; success: boolean; message?: string };
 const initialState: ActionState = { error: null, success: false };
 
 const PRIORITY_LABEL = {
-  high: { label: "No exposure", color: "text-(--status-rejected)", bg: "bg-red-500/10" },
-  medium: { label: "Below target", color: "text-(--status-pending)", bg: "bg-yellow-500/10" },
-  low: { label: "Target met", color: "text-(--status-processed)", bg: "bg-green-500/10" },
+  high: { label: "No assignments", color: "text-(--status-rejected)", bg: "bg-red-500/10" },
+  medium: { label: "Few assignments", color: "text-(--status-pending)", bg: "bg-yellow-500/10" },
+  low: { label: "Well assigned", color: "text-(--status-processed)", bg: "bg-green-500/10" },
 };
 
-type SortKey = "priority" | "total_cases" | "case_count" | "last_assigned" | "location_count";
+type SortKey = "priority" | "total_cases" | "total_assignments" | "last_assigned" | "area_duty_count";
 
-export default function AssignForm({ caseTypes, areasOfDuty, shifts, rotations, recommended, selectedCaseTypeId, quickStats, semesterWindow }: Props) {
+export default function AssignForm({ areasOfDuty, shifts, rotations, recommended, quickStats, semesterWindow }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("priority");
-  const [filterMode, setFilterMode] = useState<"all" | "incomplete" | "low_exposure">("all");
+  const [filterMode, setFilterMode] = useState<"all" | "low_exposure">("all");
   const [warnings, setWarnings] = useState<ConflictWarning[]>([]);
   const [, startTransition] = useTransition();
 
@@ -74,10 +70,8 @@ export default function AssignForm({ caseTypes, areasOfDuty, shifts, rotations, 
   const filteredStudents = useMemo(() => {
     let list = recommended;
 
-    if (filterMode === "incomplete") {
-      list = list.filter((s) => s.case_count < s.required_count);
-    } else if (filterMode === "low_exposure") {
-      list = list.filter((s) => s.case_count <= 1);
+    if (filterMode === "low_exposure") {
+      list = list.filter((s) => s.total_assignments === 0);
     }
 
     if (search.trim()) {
@@ -93,19 +87,19 @@ export default function AssignForm({ caseTypes, areasOfDuty, shifts, rotations, 
       switch (sortBy) {
         case "priority": {
           const order = { high: 0, medium: 1, low: 2 };
-          return order[a.priority] - order[b.priority] || a.case_count - b.case_count;
+          return order[a.priority] - order[b.priority] || a.total_assignments - b.total_assignments;
         }
         case "total_cases":
           return a.total_cases - b.total_cases;
-        case "case_count":
-          return a.case_count - b.case_count;
+        case "total_assignments":
+          return a.total_assignments - b.total_assignments;
         case "last_assigned": {
           const aDate = a.last_assigned ?? "";
           const bDate = b.last_assigned ?? "";
           return aDate.localeCompare(bDate);
         }
-        case "location_count":
-          return b.location_count - a.location_count;
+        case "area_duty_count":
+          return b.area_duty_count - a.area_duty_count;
         default:
           return 0;
       }
@@ -159,22 +153,20 @@ export default function AssignForm({ caseTypes, areasOfDuty, shifts, rotations, 
   return (
     <div className="space-y-6">
       {/* Quick Stats */}
-      {selectedCaseTypeId && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-lg border border-border bg-surface px-3 py-2 text-center">
-            <p className="text-lg font-bold text-(--status-rejected)">{quickStats.needCase}</p>
-            <p className="text-[10px] text-(--text-muted) uppercase tracking-wider">Need this case</p>
-          </div>
-          <div className="rounded-lg border border-border bg-surface px-3 py-2 text-center">
-            <p className="text-lg font-bold text-(--status-processed)">{quickStats.completedPct}%</p>
-            <p className="text-[10px] text-(--text-muted) uppercase tracking-wider">Met requirement</p>
-          </div>
-          <div className="rounded-lg border border-border bg-surface px-3 py-2 text-center">
-            <p className="text-lg font-bold text-foreground">{quickStats.totalStudents}</p>
-            <p className="text-[10px] text-(--text-muted) uppercase tracking-wider">Total students</p>
-          </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-lg border border-border bg-surface px-3 py-2 text-center">
+          <p className="text-lg font-bold text-(--status-rejected)">{quickStats.noAssignments}</p>
+          <p className="text-[10px] text-(--text-muted) uppercase tracking-wider">No assignments</p>
         </div>
-      )}
+        <div className="rounded-lg border border-border bg-surface px-3 py-2 text-center">
+          <p className="text-lg font-bold text-(--status-processed)">{quickStats.completedPct}%</p>
+          <p className="text-[10px] text-(--text-muted) uppercase tracking-wider">Cases complete</p>
+        </div>
+        <div className="rounded-lg border border-border bg-surface px-3 py-2 text-center">
+          <p className="text-lg font-bold text-foreground">{quickStats.totalStudents}</p>
+          <p className="text-[10px] text-(--text-muted) uppercase tracking-wider">Total students</p>
+        </div>
+      </div>
 
       {/* Assignment form */}
       <div className="rounded-xl border border-border bg-surface p-5">
@@ -187,23 +179,6 @@ export default function AssignForm({ caseTypes, areasOfDuty, shifts, rotations, 
           ) : (
             <input type="hidden" name="student_id" value={Array.from(selected)[0] ?? ""} />
           )}
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-              Case Type <span className="text-(--status-rejected)">*</span>
-            </label>
-            <select
-              name="case_type_id"
-              required
-              defaultValue={selectedCaseTypeId ?? ""}
-              className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-            >
-              <option value="">Select case type...</option>
-              {caseTypes.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
@@ -388,28 +363,25 @@ export default function AssignForm({ caseTypes, areasOfDuty, shifts, rotations, 
             className="rounded-lg border border-border bg-elevated px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="priority">Sort: Priority</option>
-            <option value="case_count">Sort: Least exposure</option>
+            <option value="total_assignments">Sort: Least assigned</option>
             <option value="total_cases">Sort: Lowest total</option>
             <option value="last_assigned">Sort: Least recent</option>
-            <option value="location_count">Sort: Most at this area</option>
+            <option value="area_duty_count">Sort: Most at this area</option>
           </select>
           <select
             value={filterMode}
-            onChange={(e) => setFilterMode(e.target.value as "all" | "incomplete" | "low_exposure")}
+            onChange={(e) => setFilterMode(e.target.value as "all" | "low_exposure")}
             className="rounded-lg border border-border bg-elevated px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="all">Filter: All</option>
-            <option value="incomplete">Incomplete only</option>
-            <option value="low_exposure">Low exposure</option>
+            <option value="low_exposure">Never assigned</option>
           </select>
         </div>
 
         {/* Student list */}
         {filteredStudents.length === 0 ? (
           <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-10">
-            <p className="text-xs text-(--text-muted)">
-              {selectedCaseTypeId ? "No matching students" : "Select a case type to see recommendations"}
-            </p>
+            <p className="text-xs text-(--text-muted)">No students found</p>
           </div>
         ) : (
           <ul className="space-y-1.5 max-h-120 overflow-y-auto pr-1">
@@ -443,11 +415,7 @@ export default function AssignForm({ caseTypes, areasOfDuty, shifts, rotations, 
                     <p className="text-xs text-(--text-muted)">
                       {s.section ?? "No section"}
                       {" \u00B7 "}
-                      <span className={s.case_count < s.required_count ? "text-(--status-rejected)" : "text-(--status-processed)"}>
-                        {s.case_count}/{s.required_count}
-                      </span>
-                      {" this type \u00B7 "}
-                      {s.total_cases} total
+                      {s.total_assignments} assigned · {s.total_cases} cases
                       {s.last_assigned && ` \u00B7 Last: ${s.last_assigned}`}
                     </p>
                   </div>
