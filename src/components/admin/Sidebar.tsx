@@ -41,6 +41,7 @@ const NAV = [
       { href: "/admin/config/areas-of-duty", label: "Areas of Duty" },
       { href: "/admin/config/shifts", label: "Shifts" },
       { href: "/admin/config/requirements", label: "Requirements" },
+      { href: "/admin/config/storage", label: "Storage" },
     ],
   },
   { href: "/admin/semester", label: "Semester", icon: CalendarDays },
