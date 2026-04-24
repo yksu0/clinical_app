@@ -18,7 +18,7 @@ export default async function StudentDashboardPage() {
       supabase.from("requirements").select("case_type_id, required_count"),
       supabase
         .from("case_logs")
-        .select("case_type_id, location_id, date, locations(name)")
+        .select("case_type_id, area_of_duty_id, date, areas_of_duty(name)")
         .eq("student_id", user.id),
       supabase
         .from("uploads")
@@ -57,7 +57,7 @@ export default async function StudentDashboardPage() {
   // Build location distribution
   const locationMap: Record<string, number> = {};
   for (const log of caseLogs) {
-    const locName = (log.locations as unknown as { name: string } | null)?.name ?? "Unknown";
+    const locName = (log.areas_of_duty as unknown as { name: string } | null)?.name ?? "Unknown";
     locationMap[locName] = (locationMap[locName] ?? 0) + 1;
   }
   const locationEntries = Object.entries(locationMap).sort((a, b) => b[1] - a[1]);
@@ -157,7 +157,7 @@ export default async function StudentDashboardPage() {
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-accent" />
             <h2 className="text-sm font-semibold text-white/80 uppercase tracking-wider">
-              Cases by Location
+              Cases by Area of Duty
             </h2>
           </div>
           {locationEntries.map(([loc, count]) => (
