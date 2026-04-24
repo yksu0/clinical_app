@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import UploadForm from "@/components/student/UploadForm";
 import { format } from "date-fns";
-import { Clock, CheckCircle, XCircle } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Archive } from "lucide-react";
 
 const STATUS_CONFIG = {
   pending: {
@@ -33,7 +33,7 @@ export default async function UploadPage() {
 
   const { data: uploads } = await supabase
     .from("uploads")
-    .select("id, file_name, status, uploaded_at")
+    .select("id, file_name, status, uploaded_at, archived")
     .eq("student_id", user!.id)
     .order("uploaded_at", { ascending: false });
 
@@ -66,6 +66,7 @@ export default async function UploadPage() {
         ) : (
           <ul className="space-y-2">
             {list.map((u) => {
+              const isArchived = (u as { archived?: boolean }).archived;
               const cfg =
                 STATUS_CONFIG[u.status as keyof typeof STATUS_CONFIG] ??
                 STATUS_CONFIG.pending;
@@ -76,20 +77,30 @@ export default async function UploadPage() {
                   className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className={`text-sm font-medium ${isArchived ? "text-(--text-muted) line-through" : "text-foreground"}`}>
                       {u.file_name}
                     </p>
                     <p className="text-xs text-(--text-muted)">
                       {format(new Date(u.uploaded_at), "MMM d, yyyy · h:mm a")}
                     </p>
                   </div>
-                  <span
-                    className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.colorClass}`}
-                    style={cfg.bgStyle}
-                  >
-                    <Icon className="h-3 w-3" />
-                    {cfg.label}
-                  </span>
+                  {isArchived ? (
+                    <span
+                      className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-(--text-muted)"
+                      style={{ background: "rgba(255,255,255,0.05)" }}
+                    >
+                      <Archive className="h-3 w-3" />
+                      Archived
+                    </span>
+                  ) : (
+                    <span
+                      className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.colorClass}`}
+                      style={cfg.bgStyle}
+                    >
+                      <Icon className="h-3 w-3" />
+                      {cfg.label}
+                    </span>
+                  )}
                 </li>
               );
             })}
