@@ -28,6 +28,7 @@ const NAV = [
   { href: "/admin/assignments", label: "Assignments", icon: CalendarPlus },
   { href: "/admin/students", label: "Students", icon: GraduationCap },
   { href: "/admin/roster", label: "Student Roster", icon: Users },
+  { href: "/admin/rotations", label: "Rotations", icon: CalendarDays },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
   {
     href: "/admin/config",
@@ -36,6 +37,7 @@ const NAV = [
     children: [
       { href: "/admin/config/case-types", label: "Case Types" },
       { href: "/admin/config/areas-of-duty", label: "Areas of Duty" },
+      { href: "/admin/config/shifts", label: "Shifts" },
       { href: "/admin/config/requirements", label: "Requirements" },
     ],
   },
