@@ -103,3 +103,20 @@ export interface AuditLog {
   details: Record<string, unknown> | null;
   created_at: string;
 }
+
+export interface CaseSubmission {
+  id: string;
+  student_id: string;
+  assignment_id: string | null;
+  case_type_id: string;
+  area_of_duty_id: string;
+  rotation_id: string | null;
+  upload_id: string | null;
+  date: string;
+  notes: string | null;
+  status: "pending" | "approved" | "rejected";
+  admin_note: string | null;
+  submitted_at: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+}
