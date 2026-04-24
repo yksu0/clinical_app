@@ -13,14 +13,14 @@ export type ConflictWarning = {
 export async function createAssignment(formData: FormData) {
   const studentId = formData.get("student_id") as string;
   const caseTypeId = formData.get("case_type_id") as string;
-  const locationId = formData.get("location_id") as string;
+  const areaOfDutyId = formData.get("area_of_duty_id") as string;
   const scheduledDate = formData.get("scheduled_date") as string;
   const endDate = (formData.get("end_date") as string) || null;
   const startTime = (formData.get("start_time") as string) || null;
   const endTime = (formData.get("end_time") as string) || null;
   const notes = (formData.get("notes") as string) || null;
 
-  if (!studentId || !caseTypeId || !locationId || !scheduledDate) {
+  if (!studentId || !caseTypeId || !areaOfDutyId || !scheduledDate) {
     return { error: "All fields are required." };
   }
 
@@ -40,7 +40,7 @@ export async function createAssignment(formData: FormData) {
     .insert({
       student_id: studentId,
       case_type_id: caseTypeId,
-      location_id: locationId,
+      area_of_duty_id: areaOfDutyId,
       scheduled_date: scheduledDate,
       end_date: endDate,
       start_time: startTime,
@@ -65,7 +65,7 @@ export async function createAssignment(formData: FormData) {
   // Send email notification (non-blocking)
   const [{ data: ct }, { data: loc }] = await Promise.all([
     supabase.from("case_types").select("name").eq("id", caseTypeId).single(),
-    supabase.from("locations").select("name").eq("id", locationId).single(),
+    supabase.from("areas_of_duty").select("name").eq("id", areaOfDutyId).single(),
   ]);
   sendAssignmentEmail(studentId, {
     caseTypeName: ct?.name ?? "Unknown",
@@ -84,14 +84,14 @@ export async function createAssignment(formData: FormData) {
 export async function bulkAssign(formData: FormData) {
   const studentIds = formData.get("student_ids") as string;
   const caseTypeId = formData.get("case_type_id") as string;
-  const locationId = formData.get("location_id") as string;
+  const areaOfDutyId = formData.get("area_of_duty_id") as string;
   const scheduledDate = formData.get("scheduled_date") as string;
   const endDate = (formData.get("end_date") as string) || null;
   const startTime = (formData.get("start_time") as string) || null;
   const endTime = (formData.get("end_time") as string) || null;
   const notes = (formData.get("notes") as string) || null;
 
-  if (!studentIds || !caseTypeId || !locationId || !scheduledDate) {
+  if (!studentIds || !caseTypeId || !areaOfDutyId || !scheduledDate) {
     return { error: "All fields are required." };
   }
 
@@ -111,7 +111,7 @@ export async function bulkAssign(formData: FormData) {
   const rows = ids.map((sid) => ({
     student_id: sid,
     case_type_id: caseTypeId,
-    location_id: locationId,
+    area_of_duty_id: areaOfDutyId,
     scheduled_date: scheduledDate,
     end_date: endDate,
     start_time: startTime,
@@ -144,7 +144,7 @@ export async function bulkAssign(formData: FormData) {
   // Send email notifications (non-blocking)
   const [{ data: ct }, { data: loc }] = await Promise.all([
     supabase.from("case_types").select("name").eq("id", caseTypeId).single(),
-    supabase.from("locations").select("name").eq("id", locationId).single(),
+    supabase.from("areas_of_duty").select("name").eq("id", areaOfDutyId).single(),
   ]);
   for (const sid of ids) {
     sendAssignmentEmail(sid, {
@@ -165,7 +165,7 @@ export async function bulkAssign(formData: FormData) {
 export async function checkConflicts(
   studentIds: string[],
   scheduledDate: string,
-  locationId: string,
+  areaOfDutyId: string,
 ): Promise<ConflictWarning[]> {
   if (studentIds.length === 0) return [];
   const supabase = await createClient();
@@ -192,7 +192,7 @@ export async function checkConflicts(
     .from("assignments")
     .select("student_id, student:profiles!student_id(full_name)")
     .in("student_id", studentIds)
-    .eq("location_id", locationId)
+    .eq("area_of_duty_id", areaOfDutyId)
     .in("status", ["assigned", "completed"]);
 
   const locCountMap: Record<string, { count: number; name: string }> = {};
@@ -205,7 +205,7 @@ export async function checkConflicts(
     if (val.count >= 3) {
       warnings.push({
         studentName: val.name,
-        reason: `Has been to this location ${val.count} times already`,
+        reason: `Has been to this area of duty ${val.count} times already`,
       });
     }
   }
