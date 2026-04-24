@@ -64,15 +64,15 @@ export async function logCase(formData: FormData) {
     details: { student_id: studentId, case_type_id: caseTypeId, date },
   });
 
-  // Auto-complete a matching open assignment (same student + case type + date)
+  // Auto-complete a matching open assignment (same student + area of duty + date)
   let assignmentCompleted = false;
   const { data: matchingAssignment } = await supabase
     .from("assignments")
     .select("id")
     .eq("student_id", studentId)
-    .eq("case_type_id", caseTypeId)
+    .eq("area_of_duty_id", areaOfDutyId)
     .eq("scheduled_date", date)
-    .in("status", ["assigned", "cancel_requested"])
+    .in("status", ["scheduled", "cancel_requested"])
     .limit(1)
     .maybeSingle();
 
