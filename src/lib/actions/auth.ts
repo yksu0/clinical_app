@@ -152,11 +152,22 @@ export async function signup(formData: FormData) {
 
   if (error) {
     const msg = error.message.toLowerCase();
-    let code = "signup_failed";
-    if (msg.includes("rate limit")) code = "email_rate_limit";
-    else if (msg.includes("already registered") || msg.includes("already been registered")) code = "email_in_use";
-    else if (msg.includes("smtp") || msg.includes("sending") || msg.includes("authentication failed") || msg.includes("unexpected_failure")) code = "email_send_failed";
-    redirect(`/signup?error=${code}`);
+
+    // If the auth user was created (userId exists), the account is good even if
+    // Supabase returned a non-critical error (e.g. SMTP delivery acknowledgement
+    // quirks). Only hard-stop on errors that mean the account was NOT created.
+    if (!userId) {
+      let code = "signup_failed";
+      if (msg.includes("rate limit")) code = "email_rate_limit";
+      else if (msg.includes("already registered") || msg.includes("already been registered")) code = "email_in_use";
+      redirect(`/signup?error=${code}`);
+    }
+
+    // userId exists — account created. If it's a true duplicate, surface that.
+    if (msg.includes("already registered") || msg.includes("already been registered")) {
+      redirect("/signup?error=email_in_use");
+    }
+    // Otherwise treat as success (email likely sent despite error response).
   }
 
   // Account created — pending admin verification
