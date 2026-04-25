@@ -185,7 +185,7 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
     );
   }
 
-  // No file selected â€” show dropzone only
+  // No file selected – show dropzone only
   if (!file) {
     return (
       <div className="rounded-xl border border-border bg-surface p-6 space-y-4">
@@ -196,7 +196,7 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
         >
           <Upload className="mb-3 h-8 w-8 text-(--text-muted)" />
           <p className="text-sm font-medium text-foreground">Click to browse</p>
-          <p className="mt-1 text-xs text-(--text-muted)">JPG, PNG or PDF Â· max 10 MB</p>
+          <p className="mt-1 text-xs text-(--text-muted)">JPG, PNG or PDF · max 10 MB</p>
           <input ref={inputRef} type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={handleFileChange} />
         </div>
         {error && <p className="text-sm text-(--status-rejected)">{error}</p>}
@@ -204,7 +204,7 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
     );
   }
 
-  // File selected â€” show two-panel layout
+  // File selected – show two-panel layout
   return (
     <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-surface overflow-hidden">
       <div className="px-5 py-4 border-b border-border flex items-center justify-between">
@@ -230,7 +230,7 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
               <p className="text-xs text-(--text-muted)">{formatBytes(file.size)}</p>
             </div>
           )}
-          <p className="text-xs text-(--text-muted) truncate">{file.name} Â· {formatBytes(file.size)}</p>
+          <p className="text-xs text-(--text-muted) truncate">{file.name} · {formatBytes(file.size)}</p>
         </div>
 
         {/* Right: case detail fields */}
@@ -248,10 +248,10 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
                 onChange={(e) => setAssignmentId(e.target.value)}
                 className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
               >
-                <option value="">â€” Not linked to an assignment â€”</option>
+                <option value="">– Not linked to an assignment –</option>
                 {openAssignments.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.areas_of_duty?.name ?? "Unknown"} â€”{" "}
+                    {a.areas_of_duty?.name ?? "Unknown"} –{" "}
                     {new Date(a.scheduled_date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
                   </option>
                 ))}
@@ -270,7 +270,7 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
               onChange={(e) => setCaseTypeId(e.target.value)}
               className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
             >
-              <option value="">Select case typeâ€¦</option>
+              <option value="">Select case type…</option>
               {caseTypes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
@@ -286,7 +286,7 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
               onChange={(e) => setAreaOfDutyId(e.target.value)}
               className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
             >
-              <option value="">Select areaâ€¦</option>
+              <option value="">Select area…</option>
               {areasOfDuty.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>
@@ -317,7 +317,7 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
                 onChange={(e) => setRotationId(e.target.value)}
                 className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
               >
-                <option value="">â€” No rotation â€”</option>
+                <option value="">– No rotation –</option>
                 {rotations.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
@@ -348,7 +348,7 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
             disabled={status === "uploading"}
             className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-black transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {status === "uploading" ? "Uploadingâ€¦" : "Upload & Submit for Review"}
+            {status === "uploading" ? "Uploading…" : "Upload & Submit for Review"}
           </button>
         </div>
       </div>
