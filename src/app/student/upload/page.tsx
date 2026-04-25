@@ -31,11 +31,28 @@ export default async function UploadPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: uploads } = await supabase
-    .from("uploads")
-    .select("id, file_name, status, uploaded_at, archived")
-    .eq("student_id", user!.id)
-    .order("uploaded_at", { ascending: false });
+  const [
+    { data: uploads },
+    { data: caseTypes },
+    { data: areasOfDuty },
+    { data: rotations },
+    { data: assignments },
+  ] = await Promise.all([
+    supabase
+      .from("uploads")
+      .select("id, file_name, status, uploaded_at, archived")
+      .eq("student_id", user!.id)
+      .order("uploaded_at", { ascending: false }),
+    supabase.from("case_types").select("id, name").eq("is_active", true).order("name"),
+    supabase.from("areas_of_duty").select("id, name").eq("is_active", true).order("name"),
+    supabase.from("rotations").select("id, name").order("start_date", { ascending: false }),
+    supabase
+      .from("assignments")
+      .select("id, scheduled_date, areas_of_duty(name)")
+      .eq("student_id", user!.id)
+      .eq("status", "scheduled")
+      .order("scheduled_date", { ascending: false }),
+  ]);
 
   const list = uploads ?? [];
 
@@ -48,7 +65,12 @@ export default async function UploadPage() {
         </p>
       </div>
 
-      <UploadForm />
+      <UploadForm
+        caseTypes={caseTypes ?? []}
+        areasOfDuty={areasOfDuty ?? []}
+        rotations={rotations ?? []}
+        openAssignments={(assignments ?? []) as unknown as { id: string; scheduled_date: string; areas_of_duty: { name: string } | null }[]}
+      />
 
       {/* History */}
       <section>
