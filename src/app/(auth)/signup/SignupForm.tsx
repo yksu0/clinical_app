@@ -1,7 +1,31 @@
 "use client";
 
 import { useState, useTransition, useRef, useCallback } from "react";
+import { useFormStatus } from "react-dom";
 import { signup, findSimilarNames } from "@/lib/actions/auth";
+
+function SubmitBtn() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface disabled:opacity-60 disabled:cursor-not-allowed"
+    >
+      {pending ? (
+        <span className="flex items-center justify-center gap-2">
+          <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          Creating account…
+        </span>
+      ) : (
+        "Create account"
+      )}
+    </button>
+  );
+}
 
 export default function SignupForm({ errorMsg }: { errorMsg: string | null }) {
   const [fullName, setFullName] = useState("");
@@ -141,12 +165,7 @@ export default function SignupForm({ errorMsg }: { errorMsg: string | null }) {
           </p>
         </div>
 
-        <button
-          type="submit"
-          className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface"
-        >
-          Create account
-        </button>
+        <SubmitBtn />
       </form>
 
       <p className="mt-6 text-center text-sm text-(--text-muted)">
