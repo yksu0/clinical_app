@@ -5,6 +5,8 @@ const ERROR_MESSAGES: Record<string, string> = {
     "Your name was not found in the student roster. Contact your instructor.",
   signup_failed: "Sign-up failed. Please try again or contact an administrator.",
   email_in_use: "That email address is already registered. Try signing in instead.",
+  email_mismatch:
+    "That email does not match the address your instructor registered for you. Use the email your instructor has on file.",
   email_send_failed:
     "Account created but the confirmation email could not be sent. Please contact an administrator.",
   email_rate_limit:
