@@ -45,13 +45,17 @@ export default function SignupForm({ errorMsg }: { errorMsg: string | null }) {
           >
             Full name
           </label>
+          <p className="text-xs text-(--text-muted) mb-1.5">
+            Format: <span className="font-mono text-accent">SURNAME, FIRSTNAME MI.</span>
+            <span className="ml-1 text-(--text-muted)">— e.g. DELA CRUZ, JUAN A.</span>
+          </p>
           <input
             id="fullName"
             name="fullName"
             type="text"
             required
             autoComplete="name"
-            placeholder="As listed in the student roster"
+            placeholder="Type your name to see matches…"
             value={fullName}
             onChange={(e) => handleNameChange(e.target.value)}
             className="w-full rounded-lg border border-border bg-elevated px-4 py-2.5 text-sm text-foreground placeholder-(--text-muted) outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent"
