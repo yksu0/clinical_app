@@ -129,6 +129,14 @@ export async function signup(formData: FormData) {
     },
   });
 
+  // Supabase returns user_repeated_signup (email already registered) as a silent
+  // "success" — identities array is empty, no email is sent, no error returned.
+  // Detect this and surface it as email_in_use before doing anything else.
+  const identities = signUpData?.user?.identities;
+  if (signUpData?.user && Array.isArray(identities) && identities.length === 0) {
+    redirect("/signup?error=email_in_use");
+  }
+
   // Upsert profile BEFORE checking for errors — even if the confirmation email
   // fails (SMTP issue), the user may still be created in auth.users and needs a
   // matching profile row so admin can see them in "Pending Approval".
