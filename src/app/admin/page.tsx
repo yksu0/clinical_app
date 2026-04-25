@@ -1,15 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { Users, ClipboardList, Upload, AlertTriangle, MapPin, BarChart3 } from "lucide-react";
+import { Users, ClipboardList, AlertTriangle, MapPin, BarChart3, ClipboardCheck } from "lucide-react";
 
 const PAGE_SIZE = 25;
 
-type FilterType =
-  | "all"
-  | "behind"
-  | "pending_uploads"
-  | "open_assignments"
-  | "low_activity";
+type FilterType = "all" | "behind" | "pending_submissions" | "no_cases";
 
 interface PageProps {
   searchParams: Promise<{
@@ -30,7 +25,7 @@ type Profile = {
 
 type StudentRow = Profile & {
   totalCases: number;
-  pendingUploads: number;
+  pendingSubmissions: number;
   openAssignments: number;
   casesByType: Record<string, number>;
   isBehind: boolean;
@@ -47,13 +42,12 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const selectedStudentId = params.student ?? null;
   const sectionFilter = params.section ?? "";
 
-  // ── Fetch All Reference Data ──────────────────────────────────────────────
   const [
     profilesRes,
     caseTypesRes,
     requirementsRes,
     caseLogsRes,
-    uploadsRes,
+    submissionsRes,
     assignmentsRes,
   ] = await Promise.all([
     supabase
@@ -67,46 +61,40 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     supabase
       .from("case_logs")
       .select("student_id, case_type_id, area_of_duty_id, date, areas_of_duty(name)"),
-    supabase
-      .from("uploads")
-      .select("student_id, status, uploaded_at"),
-    supabase
-      .from("assignments")
-      .select("student_id, status, case_type_id"),
+    supabase.from("case_submissions").select("student_id, status"),
+    supabase.from("assignments").select("student_id, status, case_type_id"),
   ]);
 
   const profiles: Profile[] = profilesRes.data ?? [];
   const caseTypes = caseTypesRes.data ?? [];
   const requirements = requirementsRes.data ?? [];
   const allLogs = caseLogsRes.data ?? [];
-  const allUploads = uploadsRes.data ?? [];
+  const allSubmissions = submissionsRes.data ?? [];
   const allAssignments = assignmentsRes.data ?? [];
 
-  // ── Aggregated Requirement Map: case_type_id → total required ─────────────
   const reqMap: Record<string, number> = {};
   for (const r of requirements) {
     reqMap[r.case_type_id] = (reqMap[r.case_type_id] ?? 0) + r.required_count;
   }
   const totalRequired = Object.values(reqMap).reduce((s, n) => s + n, 0);
 
-  // ── Per-Student Aggregation ───────────────────────────────────────────────
   const logsByStudent: Record<string, typeof allLogs> = {};
   for (const log of allLogs) {
     (logsByStudent[log.student_id] ??= []).push(log);
   }
 
-  const uploadsByStudent: Record<string, number> = {};
-  for (const u of allUploads) {
-    if (u.status === "pending") {
-      uploadsByStudent[u.student_id] = (uploadsByStudent[u.student_id] ?? 0) + 1;
+  const pendingSubmissionsByStudent: Record<string, number> = {};
+  for (const s of allSubmissions) {
+    if (s.status === "pending") {
+      pendingSubmissionsByStudent[s.student_id] =
+        (pendingSubmissionsByStudent[s.student_id] ?? 0) + 1;
     }
   }
 
   const assignmentsByStudent: Record<string, number> = {};
-  // Also track open assignments per case type per student for projected completion
   const openAssignmentsByStudentType: Record<string, Record<string, number>> = {};
   for (const a of allAssignments) {
-    if (a.status === "assigned") {
+    if (a.status === "scheduled") {
       assignmentsByStudent[a.student_id] =
         (assignmentsByStudent[a.student_id] ?? 0) + 1;
       if (a.case_type_id) {
@@ -116,7 +104,6 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     }
   }
 
-  // ── Build StudentRow array ────────────────────────────────────────────────
   const studentRows: StudentRow[] = profiles.map((p) => {
     const logs = logsByStudent[p.id] ?? [];
     const casesByType: Record<string, number> = {};
@@ -124,6 +111,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       casesByType[log.case_type_id] = (casesByType[log.case_type_id] ?? 0) + 1;
     }
     const totalCases = logs.length;
+
     const completedRequired = Math.min(
       Object.entries(reqMap).reduce(
         (sum, [ctId, req]) => sum + Math.min(casesByType[ctId] ?? 0, req),
@@ -132,11 +120,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       totalRequired
     );
     const completionPct =
-      totalRequired > 0
-        ? Math.round((completedRequired / totalRequired) * 100)
-        : 0;
+      totalRequired > 0 ? Math.round((completedRequired / totalRequired) * 100) : 0;
 
-    // Projected completion counts open assignments as future cases (capped at requirement)
     const openByType = openAssignmentsByStudentType[p.id] ?? {};
     const projectedRequired = Math.min(
       Object.entries(reqMap).reduce((sum, [ctId, req]) => {
@@ -147,11 +132,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       totalRequired
     );
     const projectedPct =
-      totalRequired > 0
-        ? Math.round((projectedRequired / totalRequired) * 100)
-        : 0;
+      totalRequired > 0 ? Math.round((projectedRequired / totalRequired) * 100) : 0;
 
-    // Only mark "behind" if projected completion (actual + open assignments) is < 50%
     const isBehind =
       totalRequired > 0 &&
       projectedPct < 50 &&
@@ -163,7 +145,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     return {
       ...p,
       totalCases,
-      pendingUploads: uploadsByStudent[p.id] ?? 0,
+      pendingSubmissions: pendingSubmissionsByStudent[p.id] ?? 0,
       openAssignments: assignmentsByStudent[p.id] ?? 0,
       casesByType,
       isBehind,
@@ -172,23 +154,16 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     };
   });
 
-  // ── Summary Stats ─────────────────────────────────────────────────────────
   const totalStudents = studentRows.length;
   const totalCasesLogged = allLogs.length;
-  const totalPendingUploads = allUploads.filter((u) => u.status === "pending").length;
-  const totalOpenAssignments = allAssignments.filter(
-    (a) => a.status === "assigned"
-  ).length;
+  const totalPendingSubmissions = allSubmissions.filter((s) => s.status === "pending").length;
   const studentsBehind = studentRows.filter((s) => s.isBehind).length;
 
-  // ── Case Distribution by Type ─────────────────────────────────────────────
   const caseCountByType: Record<string, number> = {};
   for (const log of allLogs) {
-    caseCountByType[log.case_type_id] =
-      (caseCountByType[log.case_type_id] ?? 0) + 1;
+    caseCountByType[log.case_type_id] = (caseCountByType[log.case_type_id] ?? 0) + 1;
   }
 
-  // ── Location Distribution ─────────────────────────────────────────────────
   const locationCountMap: Record<string, number> = {};
   for (const log of allLogs) {
     const locName =
@@ -199,42 +174,27 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6);
 
-  // ── Unique sections for filtering ─────────────────────────────────────────
-  const sections = [...new Set(studentRows.map((s) => s.section).filter(Boolean))] as string[];
+  const sections = [
+    ...new Set(studentRows.map((s) => s.section).filter(Boolean)),
+  ] as string[];
   sections.sort();
 
-  // ── Apply Filters ─────────────────────────────────────────────────────────
   let filtered = studentRows;
-
-  if (sectionFilter) {
-    filtered = filtered.filter((s) => s.section === sectionFilter);
-  }
-
+  if (sectionFilter) filtered = filtered.filter((s) => s.section === sectionFilter);
   if (search) {
     const q = search.toLowerCase();
     filtered = filtered.filter(
-      (s) =>
-        s.full_name.toLowerCase().includes(q) ||
-        s.email.toLowerCase().includes(q)
+      (s) => s.full_name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
     );
   }
+  if (filter === "behind") filtered = filtered.filter((s) => s.isBehind);
+  else if (filter === "pending_submissions") filtered = filtered.filter((s) => s.pendingSubmissions > 0);
+  else if (filter === "no_cases") filtered = filtered.filter((s) => s.totalCases === 0);
 
-  if (filter === "behind") {
-    filtered = filtered.filter((s) => s.isBehind);
-  } else if (filter === "pending_uploads") {
-    filtered = filtered.filter((s) => s.pendingUploads > 0);
-  } else if (filter === "open_assignments") {
-    filtered = filtered.filter((s) => s.openAssignments > 0);
-  } else if (filter === "low_activity") {
-    filtered = filtered.filter((s) => s.totalCases === 0);
-  }
-
-  // ── Pagination ────────────────────────────────────────────────────────────
   const totalFiltered = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // ── Selected Student Detail ───────────────────────────────────────────────
   const selectedStudent = selectedStudentId
     ? (studentRows.find((s) => s.id === selectedStudentId) ?? null)
     : null;
@@ -248,9 +208,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   };
 
   const selectedLogs: LogRow[] = selectedStudentId
-    ? (allLogs.filter(
-        (l) => l.student_id === selectedStudentId
-      ) as unknown as LogRow[])
+    ? (allLogs.filter((l) => l.student_id === selectedStudentId) as unknown as LogRow[])
     : [];
 
   function buildUrl(overrides: Record<string, string | undefined>) {
@@ -271,34 +229,21 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
   const FILTERS: { key: FilterType; label: string; count: number }[] = [
     { key: "all", label: "All Students", count: totalStudents },
     { key: "behind", label: "Falling Behind", count: studentsBehind },
-    {
-      key: "pending_uploads",
-      label: "Pending Uploads",
-      count: totalPendingUploads,
-    },
-    {
-      key: "open_assignments",
-      label: "Open Assignments",
-      count: totalOpenAssignments,
-    },
-    {
-      key: "low_activity",
-      label: "No Cases Yet",
-      count: studentRows.filter((s) => s.totalCases === 0).length,
-    },
+    { key: "pending_submissions", label: "Pending Review", count: studentRows.filter((s) => s.pendingSubmissions > 0).length },
+    { key: "no_cases", label: "No Cases Yet", count: studentRows.filter((s) => s.totalCases === 0).length },
   ];
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label="Active Students" value={totalStudents} icon={<Users className="h-5 w-5" />} />
         <StatCard label="Cases Logged" value={totalCasesLogged} icon={<ClipboardList className="h-5 w-5" />} />
         <StatCard
-          label="Pending Uploads"
-          value={totalPendingUploads}
-          highlight={totalPendingUploads > 0}
-          icon={<Upload className="h-5 w-5" />}
+          label="Pending Review"
+          value={totalPendingSubmissions}
+          highlight={totalPendingSubmissions > 0}
+          icon={<ClipboardCheck className="h-5 w-5" />}
         />
         <StatCard
           label="Students Behind"
@@ -309,7 +254,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
       </div>
 
       {/* Alerts */}
-      {(studentsBehind > 0 || totalPendingUploads > 0) && (
+      {(studentsBehind > 0 || totalPendingSubmissions > 0) && (
         <div className="space-y-2">
           {studentsBehind > 0 && (
             <AlertBanner
@@ -318,45 +263,92 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
               href={buildUrl({ filter: "behind", page: "1", student: undefined })}
             />
           )}
-          {totalPendingUploads > 0 && (
+          {totalPendingSubmissions > 0 && (
             <AlertBanner
               type="info"
-              message={`${totalPendingUploads} upload${totalPendingUploads !== 1 ? "s are" : " is"} awaiting review.`}
+              message={`${totalPendingSubmissions} case submission${totalPendingSubmissions !== 1 ? "s are" : " is"} awaiting review.`}
               href="/admin/cases/review"
             />
           )}
         </div>
       )}
 
-      {/* Two-column layout: student list + optional detail panel */}
+      {/* Distribution Charts */}
+      {!selectedStudent && totalCasesLogged > 0 && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-accent" />
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-(--text-secondary)">
+                Cases by Type
+              </h2>
+            </div>
+            {caseTypes.map((ct) => {
+              const count = caseCountByType[ct.id] ?? 0;
+              const pct = totalCasesLogged > 0 ? Math.round((count / totalCasesLogged) * 100) : 0;
+              return (
+                <div key={ct.id} className="flex items-center gap-3">
+                  <span className="w-32 shrink-0 truncate text-xs text-(--text-secondary)">{ct.name}</span>
+                  <div className="flex-1 rounded-full bg-elevated h-2.5">
+                    <div className="h-2.5 rounded-full bg-accent/70 transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="w-14 text-right text-xs text-(--text-muted)">
+                    {count} ({pct}%)
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-accent" />
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-(--text-secondary)">
+                Top Areas of Duty
+              </h2>
+            </div>
+            {locationEntries.length === 0 ? (
+              <p className="text-xs text-(--text-muted)">No data yet.</p>
+            ) : (
+              locationEntries.map(([loc, count]) => {
+                const pct = totalCasesLogged > 0 ? Math.round((count / totalCasesLogged) * 100) : 0;
+                return (
+                  <div key={loc} className="flex items-center gap-3">
+                    <span className="w-32 shrink-0 truncate text-xs text-(--text-secondary)">{loc}</span>
+                    <div className="flex-1 rounded-full bg-elevated h-2.5">
+                      <div className="h-2.5 rounded-full bg-accent/60 transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="w-14 text-right text-xs text-(--text-muted)">
+                      {count} ({pct}%)
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Student List + Detail Panel */}
       <div className={`flex gap-6 ${selectedStudent ? "items-start" : ""}`}>
-        {/* Left: Student List */}
-        <div
-          className={`flex min-w-0 flex-col gap-4 ${selectedStudent ? "w-1/2" : "w-full"}`}
-        >
+        <div className={`flex min-w-0 flex-col gap-4 ${selectedStudent ? "w-1/2" : "w-full"}`}>
           {/* Filters + Search */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap gap-2">
               {FILTERS.map((f) => (
                 <Link
                   key={f.key}
-                  href={buildUrl({
-                    filter: f.key === "all" ? undefined : f.key,
-                    page: "1",
-                    student: undefined,
-                  })}
+                  href={buildUrl({ filter: f.key === "all" ? undefined : f.key, page: "1", student: undefined })}
                   className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                     filter === f.key
                       ? "bg-accent text-black"
-                      : "bg-white/10 text-white/70 hover:bg-white/20"
+                      : "bg-elevated text-(--text-secondary) hover:text-foreground hover:bg-border"
                   }`}
                 >
                   {f.label}
                   <span
                     className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                      filter === f.key
-                        ? "bg-black/20 text-black"
-                        : "bg-white/10"
+                      filter === f.key ? "bg-black/20 text-black" : "bg-border text-(--text-muted)"
                     }`}
                   >
                     {f.count}
@@ -365,23 +357,20 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
               ))}
             </div>
 
-            {/* Search + Section filter */}
             <form method="GET" action="/admin" className="flex gap-2">
-              {filter !== "all" && (
-                <input type="hidden" name="filter" value={filter} />
-              )}
+              {filter !== "all" && <input type="hidden" name="filter" value={filter} />}
               <input type="hidden" name="page" value="1" />
               <input
                 name="search"
                 defaultValue={search}
                 placeholder="Search by name or email…"
-                className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-accent focus:outline-none"
+                className="flex-1 rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground placeholder:text-(--text-muted) focus:border-accent focus:outline-none"
               />
               {sections.length > 0 && (
                 <select
                   name="section"
                   defaultValue={sectionFilter}
-                  className="rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs text-white focus:border-accent focus:outline-none"
+                  className="rounded-lg border border-border bg-elevated px-2 py-2 text-xs text-foreground focus:border-accent focus:outline-none"
                 >
                   <option value="">All Sections</option>
                   {sections.map((s) => (
@@ -391,14 +380,14 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
               )}
               <button
                 type="submit"
-                className="rounded-lg bg-white/10 px-4 py-2 text-sm text-white/80 hover:bg-white/20 transition-colors"
+                className="rounded-lg border border-border bg-elevated px-4 py-2 text-sm text-(--text-secondary) hover:text-foreground transition-colors"
               >
                 Search
               </button>
               {(search || sectionFilter) && (
                 <Link
                   href={buildUrl({ search: undefined, section: undefined, page: "1" })}
-                  className="rounded-lg bg-white/10 px-3 py-2 text-sm text-white/60 hover:bg-white/20 transition-colors"
+                  className="rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-(--text-muted) hover:text-foreground transition-colors"
                 >
                   Clear
                 </Link>
@@ -407,69 +396,43 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           </div>
 
           {/* Student Table */}
-          <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
-            <div className="grid grid-cols-[1fr_60px_60px_80px] gap-2 border-b border-white/10 bg-white/5 px-4 py-2.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                Student
-              </span>
-              <span className="text-center text-xs font-semibold uppercase tracking-wider text-white/50">
-                Cases
-              </span>
-              <span className="text-center text-xs font-semibold uppercase tracking-wider text-white/50">
-                Pending
-              </span>
-              <span className="text-center text-xs font-semibold uppercase tracking-wider text-white/50">
-                Complete
-              </span>
+          <div className="overflow-hidden rounded-xl border border-border bg-surface">
+            <div className="grid grid-cols-[1fr_60px_80px] gap-2 border-b border-border bg-elevated px-4 py-2.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-(--text-muted)">Student</span>
+              <span className="text-center text-xs font-semibold uppercase tracking-wider text-(--text-muted)">Cases</span>
+              <span className="text-center text-xs font-semibold uppercase tracking-wider text-(--text-muted)">Complete</span>
             </div>
 
             {paginated.length === 0 ? (
-              <div className="px-4 py-10 text-center text-sm text-white/40">
+              <div className="px-4 py-10 text-center text-sm text-(--text-muted)">
                 No students match the current filter.
               </div>
             ) : (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-border">
                 {paginated.map((s) => {
                   const isSelected = selectedStudentId === s.id;
                   return (
                     <Link
                       key={s.id}
-                      href={buildUrl({
-                        student: isSelected ? undefined : s.id,
-                      })}
-                      className={`grid grid-cols-[1fr_60px_60px_80px] items-center gap-2 px-4 py-3 text-sm transition-colors hover:bg-white/5 ${
-                        isSelected
-                          ? "bg-accent/10 ring-1 ring-inset ring-accent/30"
-                          : ""
+                      href={buildUrl({ student: isSelected ? undefined : s.id })}
+                      className={`grid grid-cols-[1fr_60px_80px] items-center gap-2 px-4 py-3 text-sm transition-colors hover:bg-elevated ${
+                        isSelected ? "bg-accent/10 ring-1 ring-inset ring-accent/30" : ""
                       }`}
                     >
                       <span>
-                        <p
-                          className={`font-medium ${isSelected ? "text-accent" : "text-white"}`}
-                        >
+                        <p className={`font-medium truncate ${isSelected ? "text-accent" : "text-foreground"}`}>
                           {s.full_name}
                         </p>
-                        <p className="text-xs text-white/40">
-                          {s.section ?? s.email}
-                        </p>
+                        <p className="text-xs text-(--text-muted) truncate">{s.section ?? s.email}</p>
                       </span>
-                      <span className="text-center text-white/80">
-                        {s.totalCases}
-                      </span>
-                      <span
-                        className={`text-center ${s.pendingUploads > 0 ? "font-semibold text-accent" : "text-white/40"}`}
-                      >
-                        {s.pendingUploads > 0 ? s.pendingUploads : "—"}
+                      <span className={`text-center text-sm ${s.totalCases > 0 ? "text-foreground" : "text-(--text-muted)"}`}>
+                        {s.totalCases > 0 ? s.totalCases : "—"}
                       </span>
                       <span className="flex flex-col items-end gap-1">
                         <span className="flex items-center gap-1">
                           <span
                             className={`text-xs font-semibold ${
-                              s.completionPct >= 100
-                                ? "text-green-400"
-                                : s.projectedPct >= 50
-                                  ? "text-accent"
-                                  : "text-red-400"
+                              s.completionPct >= 100 ? "text-green-400" : s.projectedPct >= 50 ? "text-accent" : "text-red-400"
                             }`}
                           >
                             {s.completionPct}%
@@ -480,14 +443,10 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                             </span>
                           )}
                         </span>
-                        <div className="h-1.5 w-full rounded-full bg-white/10 min-w-15">
+                        <div className="h-1.5 w-full rounded-full bg-elevated min-w-[60px]">
                           <div
                             className={`h-1.5 rounded-full transition-all ${
-                              s.completionPct >= 100
-                                ? "bg-green-500"
-                                : s.projectedPct >= 50
-                                  ? "bg-accent"
-                                  : "bg-red-500"
+                              s.completionPct >= 100 ? "bg-green-500" : s.projectedPct >= 50 ? "bg-accent" : "bg-red-500"
                             }`}
                             style={{ width: `${Math.min(s.completionPct, 100)}%` }}
                           />
@@ -502,25 +461,18 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between text-sm text-white/50">
+            <div className="flex items-center justify-between text-sm text-(--text-muted)">
               <span>
-                {(page - 1) * PAGE_SIZE + 1}–
-                {Math.min(page * PAGE_SIZE, totalFiltered)} of {totalFiltered}
+                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalFiltered)} of {totalFiltered}
               </span>
               <div className="flex gap-2">
                 {page > 1 && (
-                  <Link
-                    href={buildUrl({ page: String(page - 1) })}
-                    className="rounded-lg bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20 transition-colors"
-                  >
+                  <Link href={buildUrl({ page: String(page - 1) })} className="rounded-lg border border-border bg-elevated px-3 py-1.5 text-xs hover:bg-border transition-colors">
                     ← Prev
                   </Link>
                 )}
                 {page < totalPages && (
-                  <Link
-                    href={buildUrl({ page: String(page + 1) })}
-                    className="rounded-lg bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20 transition-colors"
-                  >
+                  <Link href={buildUrl({ page: String(page + 1) })} className="rounded-lg border border-border bg-elevated px-3 py-1.5 text-xs hover:bg-border transition-colors">
                     Next →
                   </Link>
                 )}
@@ -529,85 +481,66 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           )}
         </div>
 
-        {/* Right: Student Detail Panel */}
+        {/* Student Detail Panel */}
         {selectedStudent && (
           <aside className="w-1/2 shrink-0 space-y-4">
-            <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-4">
+            <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-semibold text-white">
-                    {selectedStudent.full_name}
-                  </p>
-                  <p className="text-xs text-white/40">{selectedStudent.email}</p>
+                  <p className="font-semibold text-foreground">{selectedStudent.full_name}</p>
+                  <p className="text-xs text-(--text-muted)">{selectedStudent.email}</p>
                   {selectedStudent.section && (
-                    <p className="text-xs text-white/40">
-                      {selectedStudent.section}
-                    </p>
+                    <p className="text-xs text-(--text-muted)">{selectedStudent.section}</p>
                   )}
                 </div>
                 <Link
                   href={buildUrl({ student: undefined })}
-                  className="text-xs text-white/40 hover:text-white/70"
+                  className="text-xs text-(--text-muted) hover:text-foreground transition-colors"
                 >
-                  ✕ Close
+                  ✕
                 </Link>
               </div>
 
-              {/* Summary */}
               <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-lg bg-white/5 p-3">
-                  <p className="text-lg font-bold text-accent">
-                    {selectedStudent.totalCases}
-                  </p>
-                  <p className="text-xs text-white/40">Cases</p>
+                <div className="rounded-lg bg-elevated p-3">
+                  <p className="text-lg font-bold text-accent">{selectedStudent.totalCases}</p>
+                  <p className="text-xs text-(--text-muted)">Cases</p>
                 </div>
-                <div className="rounded-lg bg-white/5 p-3">
-                  <p
-                    className={`text-lg font-bold ${selectedStudent.pendingUploads > 0 ? "text-accent" : "text-white/60"}`}
-                  >
-                    {selectedStudent.pendingUploads}
+                <div className="rounded-lg bg-elevated p-3">
+                  <p className={`text-lg font-bold ${selectedStudent.pendingSubmissions > 0 ? "text-accent" : "text-(--text-muted)"}`}>
+                    {selectedStudent.pendingSubmissions || "—"}
                   </p>
-                  <p className="text-xs text-white/40">Pending</p>
+                  <p className="text-xs text-(--text-muted)">Pending</p>
                 </div>
-                <div className="rounded-lg bg-white/5 p-3">
-                  <p
-                    className={`text-lg font-bold ${selectedStudent.completionPct >= 100 ? "text-green-400" : "text-white/60"}`}
-                  >
+                <div className="rounded-lg bg-elevated p-3">
+                  <p className={`text-lg font-bold ${selectedStudent.completionPct >= 100 ? "text-green-400" : "text-(--text-muted)"}`}>
                     {selectedStudent.completionPct}%
                   </p>
-                  <p className="text-xs text-white/40">Complete</p>
+                  <p className="text-xs text-(--text-muted)">Complete</p>
                 </div>
               </div>
 
-              {/* Per Case Type Progress */}
               <div className="space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                  Requirements
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-(--text-muted)">Requirements</p>
                 {caseTypes.length === 0 ? (
-                  <p className="text-xs text-white/30">No requirements set.</p>
+                  <p className="text-xs text-(--text-muted)">No requirements set.</p>
                 ) : (
                   caseTypes.map((ct) => {
                     const req = reqMap[ct.id] ?? 0;
                     const done = selectedStudent.casesByType[ct.id] ?? 0;
-                    const pct =
-                      req > 0
-                        ? Math.min(100, Math.round((done / req) * 100))
-                        : 0;
+                    const pct = req > 0 ? Math.min(100, Math.round((done / req) * 100)) : 0;
                     const met = req > 0 && done >= req;
                     return (
                       <div key={ct.id}>
                         <div className="flex justify-between mb-1">
-                          <span className="text-xs text-white/70">{ct.name}</span>
-                          <span
-                            className={`text-xs font-semibold ${met ? "text-green-400" : "text-accent"}`}
-                          >
+                          <span className="text-xs text-(--text-secondary)">{ct.name}</span>
+                          <span className={`text-xs font-semibold ${met ? "text-green-400" : "text-accent"}`}>
                             {done}/{req || "—"}
                           </span>
                         </div>
-                        <div className="h-2.5 w-full rounded-full bg-white/10">
+                        <div className="h-2 w-full rounded-full bg-elevated">
                           <div
-                            className={`h-2.5 rounded-full transition-all ${met ? "bg-green-500" : "bg-accent"}`}
+                            className={`h-2 rounded-full transition-all ${met ? "bg-green-500" : "bg-accent"}`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -617,45 +550,31 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 )}
               </div>
 
-              {/* Warning Badge */}
               {selectedStudent.isBehind && (
                 <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3">
-                  <p className="text-xs font-semibold text-red-400">
-                    ⚠ Falling Behind
-                  </p>
+                  <p className="text-xs font-semibold text-red-400">Falling Behind</p>
                   <p className="text-xs text-red-400/80 mt-0.5">
-                    This student has not met 50% of their required case
-                    exposure.
+                    Less than 50% of required case exposure reached.
                   </p>
                 </div>
               )}
 
-              {/* Recent Cases */}
               {selectedLogs.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                    Recent Cases
-                  </p>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-(--text-muted)">Recent Cases</p>
                   <div className="max-h-40 space-y-1 overflow-y-auto">
                     {selectedLogs
                       .slice()
                       .sort((a, b) => (b.date > a.date ? 1 : -1))
                       .slice(0, 10)
                       .map((log, i) => (
-                        <div
-                          key={i}
-                          className="flex justify-between border-b border-white/5 py-1 text-xs"
-                        >
-                          <span className="text-white/60">
-                            {caseTypes.find((c) => c.id === log.case_type_id)
-                              ?.name ?? "—"}
+                        <div key={i} className="flex justify-between border-b border-border py-1 text-xs">
+                          <span className="text-(--text-secondary)">
+                            {caseTypes.find((c) => c.id === log.case_type_id)?.name ?? "—"}
                           </span>
-                          <span className="text-white/40">
+                          <span className="text-(--text-muted)">
                             {log.date
-                              ? new Date(log.date).toLocaleDateString("en-AU", {
-                                  day: "numeric",
-                                  month: "short",
-                                })
+                              ? new Date(log.date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })
                               : "—"}
                           </span>
                         </div>
@@ -664,103 +583,30 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                 </div>
               )}
 
-              {/* Quick Actions */}
               <div className="flex gap-2 pt-1">
                 <Link
-                  href={`/admin/cases/review`}
+                  href={`/admin/cases/review?tab=log&student=${selectedStudent.id}`}
                   className="flex-1 rounded-lg bg-accent/20 py-2 text-center text-xs font-semibold text-accent hover:bg-accent/30 transition-colors"
                 >
                   Log Case
                 </Link>
                 <Link
                   href={`/admin/assignments?student=${selectedStudent.id}`}
-                  className="flex-1 rounded-lg bg-white/10 py-2 text-center text-xs font-semibold text-white/70 hover:bg-white/20 transition-colors"
+                  className="flex-1 rounded-lg border border-border bg-elevated py-2 text-center text-xs font-semibold text-(--text-secondary) hover:bg-border transition-colors"
                 >
                   Assign
+                </Link>
+                <Link
+                  href={`/admin/students/${selectedStudent.id}`}
+                  className="flex-1 rounded-lg border border-border bg-elevated py-2 text-center text-xs font-semibold text-(--text-secondary) hover:bg-border transition-colors"
+                >
+                  Profile
                 </Link>
               </div>
             </div>
           </aside>
         )}
       </div>
-
-      {/* Distribution Charts (hidden when student panel is open) */}
-      {!selectedStudent && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {/* Case Type Distribution */}
-          <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-accent" />
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                Cases by Type
-              </h2>
-            </div>
-            {caseTypes.length === 0 ? (
-              <p className="text-xs text-white/30">No data.</p>
-            ) : (
-              caseTypes.map((ct) => {
-                const count = caseCountByType[ct.id] ?? 0;
-                const pct =
-                  totalCasesLogged > 0
-                    ? Math.round((count / totalCasesLogged) * 100)
-                    : 0;
-                return (
-                  <div key={ct.id} className="flex items-center gap-3">
-                    <span className="w-32 shrink-0 truncate text-xs text-white/70">
-                      {ct.name}
-                    </span>
-                    <div className="flex-1 rounded-full bg-white/10 h-3">
-                      <div
-                        className="h-3 rounded-full bg-accent/70 transition-all"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="w-12 text-right text-xs font-medium text-white/50">
-                      {count} <span className="text-white/30">({pct}%)</span>
-                    </span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Area of Duty Distribution */}
-          <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-accent" />
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                Top Areas of Duty
-              </h2>
-            </div>
-            {locationEntries.length === 0 ? (
-              <p className="text-xs text-white/30">No data.</p>
-            ) : (
-              locationEntries.map(([loc, count]) => {
-                const pct =
-                  totalCasesLogged > 0
-                    ? Math.round((count / totalCasesLogged) * 100)
-                    : 0;
-                return (
-                  <div key={loc} className="flex items-center gap-3">
-                    <span className="w-32 shrink-0 truncate text-xs text-white/70">
-                      {loc}
-                    </span>
-                    <div className="flex-1 rounded-full bg-white/10 h-3">
-                      <div
-                        className="h-3 rounded-full bg-accent/60 transition-all"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="w-12 text-right text-xs font-medium text-white/50">
-                      {count} <span className="text-white/30">({pct}%)</span>
-                    </span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -779,24 +625,22 @@ function StatCard({
   return (
     <div
       className={`rounded-xl border p-5 ${
-        highlight
-          ? "border-accent/30 bg-accent/10"
-          : "border-white/10 bg-white/5"
+        highlight ? "border-accent/30 bg-accent/10" : "border-border bg-surface"
       }`}
     >
       <div className="flex items-center justify-between mb-3">
-        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-          highlight ? "bg-accent/20 text-accent" : "bg-white/10 text-white/50"
-        }`}>
+        <div
+          className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+            highlight ? "bg-accent/20 text-accent" : "bg-elevated text-(--text-muted)"
+          }`}
+        >
           {icon}
         </div>
-        <p
-          className={`text-3xl font-bold ${highlight ? "text-accent" : "text-white"}`}
-        >
+        <p className={`text-3xl font-bold ${highlight ? "text-accent" : "text-foreground"}`}>
           {value}
         </p>
       </div>
-      <p className="text-xs font-medium text-white/50">{label}</p>
+      <p className="text-xs font-medium text-(--text-muted)">{label}</p>
     </div>
   );
 }

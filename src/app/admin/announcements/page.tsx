@@ -32,8 +32,8 @@ export default async function AnnouncementsPage({
     <div className="flex gap-8 p-6 max-w-6xl">
       {/* Left: Post Form */}
       <aside className="w-80 shrink-0">
-        <div className="sticky top-6 rounded-xl border border-white/10 bg-white/5 p-5">
-          <h2 className="text-sm font-semibold text-white mb-4">
+        <div className="sticky top-6 rounded-xl border border-border bg-surface p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">
             New Announcement
           </h2>
           <AnnouncementForm error={error} success={success} />
@@ -42,15 +42,15 @@ export default async function AnnouncementsPage({
 
       {/* Right: Feed */}
       <div className="flex-1 space-y-4">
-        <h1 className="text-2xl font-bold text-white">Announcements</h1>
+        <h1 className="text-xl font-bold text-foreground">Announcements</h1>
         {queryError && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4">
             <p className="text-xs text-red-400 font-mono">DB error: {queryError.message}</p>
           </div>
         )}
         {announcements.length === 0 ? (
-          <div className="rounded-xl border border-white/10 bg-white/5 p-12 text-center">
-            <p className="text-sm text-white/40">
+          <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
+            <p className="text-sm text-(--text-muted)">
               No announcements yet. Post one to notify all students and CIs.
             </p>
           </div>
@@ -58,14 +58,14 @@ export default async function AnnouncementsPage({
           announcements.map((a) => (
             <div
               key={a.id}
-              className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-2"
+              className="rounded-xl border border-border bg-surface p-5 space-y-2"
             >
               {a.image_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={a.image_url} alt={a.title} className="w-full rounded-lg object-cover max-h-48 mb-1" />
               )}
               <div className="flex items-start justify-between gap-4">
-                <h3 className="font-semibold text-white">{a.title}</h3>
+                <h3 className="font-semibold text-foreground">{a.title}</h3>
                 <form
                   action={async () => {
                     "use server";
@@ -80,8 +80,8 @@ export default async function AnnouncementsPage({
                   </button>
                 </form>
               </div>
-              <p className="text-sm text-white/70 whitespace-pre-wrap">{a.content}</p>
-              <p className="text-xs text-white/30">
+              <p className="text-sm text-(--text-secondary) whitespace-pre-wrap">{a.content}</p>
+              <p className="text-xs text-(--text-muted)">
                 {a.profiles?.full_name ?? "Admin"} &middot;{" "}
                 {new Date(a.created_at).toLocaleDateString("en-AU", {
                   day: "numeric",

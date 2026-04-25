@@ -19,6 +19,8 @@ import {
   X,
   Rss,
   ClipboardCheck,
+  Repeat,
+  BookOpen,
 } from "lucide-react";
 import { logout } from "@/lib/actions/auth";
 
@@ -28,8 +30,8 @@ const NAV = [
   { href: "/admin/cases/review", label: "Cases", icon: ClipboardCheck },
   { href: "/admin/assignments", label: "Assignments", icon: CalendarPlus },
   { href: "/admin/students", label: "Students", icon: GraduationCap },
-  { href: "/admin/roster", label: "Student Roster", icon: Users },
-  { href: "/admin/rotations", label: "Rotations", icon: CalendarDays },
+  { href: "/admin/roster", label: "Enrollment", icon: Users },
+  { href: "/admin/rotations", label: "Rotations", icon: Repeat },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
   {
     href: "/admin/config",
@@ -43,7 +45,7 @@ const NAV = [
       { href: "/admin/config/storage", label: "Storage" },
     ],
   },
-  { href: "/admin/semester", label: "Semester", icon: CalendarDays },
+  { href: "/admin/semester", label: "Semester", icon: BookOpen },
   { href: "/admin/audit", label: "Audit Logs", icon: ScrollText },
   { href: "/admin/export", label: "Export Data", icon: Download },
 ];

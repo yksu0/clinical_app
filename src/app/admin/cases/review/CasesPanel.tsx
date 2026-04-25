@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Clock, ClipboardCheck, PenSquare, CheckCircle } from "lucide-react";
 import { logCase } from "./actions";
@@ -32,7 +33,16 @@ type LogState = { error: string | null; success: boolean; assignmentCompleted?: 
 const logInitial: LogState = { error: null, success: false };
 
 export default function CasesPanel({ pending, students, caseTypes, areasOfDuty, rotations }: Props) {
-  const [tab, setTab] = useState<"review" | "log">("review");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") === "log" ? "log" : "review";
+  const preselectedStudent = searchParams.get("student") ?? "";
+  const [tab, setTab] = useState<"review" | "log">(initialTab as "review" | "log");
+
+  // Sync tab when URL search params change (e.g. navigating from dashboard)
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t === "log" || t === "review") setTab(t);
+  }, [searchParams]);
 
   const [logState, logAction, logPending] = useActionState(
     async (_prev: LogState, formData: FormData): Promise<LogState> => {
@@ -176,6 +186,7 @@ export default function CasesPanel({ pending, students, caseTypes, areasOfDuty, 
                   <select
                     name="student_id"
                     required
+                    defaultValue={preselectedStudent}
                     className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
                   >
                     <option value="">Select student…</option>
