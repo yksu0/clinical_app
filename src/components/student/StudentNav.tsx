@@ -4,14 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { logout } from "@/lib/actions/auth";
-import { LayoutDashboard, Upload, CalendarClock, ClipboardList, Menu, X, Rss, FilePlus, BookUser } from "lucide-react";
+import { LayoutDashboard, CalendarClock, ClipboardList, Menu, X, Rss, FilePlus, BookUser } from "lucide-react";
 
 const NAV = [
   { href: "/feed", label: "Feed", icon: Rss },
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/student/upload", label: "Upload", icon: Upload },
+  { href: "/student/upload", label: "Submit Case", icon: FilePlus },
   { href: "/student/assignments", label: "Assignments", icon: CalendarClock },
-  { href: "/student/cases", label: "My Cases", icon: FilePlus },
   { href: "/student/history", label: "Case History", icon: ClipboardList },
   { href: "/student/directory", label: "Directory", icon: BookUser },
 ];

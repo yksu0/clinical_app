@@ -173,9 +173,13 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
           >
             Upload Another
           </button>
-          <a href="/student/cases" className="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-black hover:bg-accent/90 transition-colors">
-            View My Cases
-          </a>
+          <button
+            type="button"
+            onClick={() => { setStatus("idle"); router.refresh(); }}
+            className="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-black hover:bg-accent/90 transition-colors"
+          >
+            View Submissions
+          </button>
         </div>
       </div>
     );
