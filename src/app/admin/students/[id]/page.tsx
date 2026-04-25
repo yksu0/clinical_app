@@ -12,7 +12,7 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
 
   const { id } = await params;
 
-  const [profileRes, caseTypesRes, requirementsRes, caseLogsRes, assignmentsRes, overridesRes] =
+  const [profileRes, caseTypesRes, requirementsRes, caseLogsRes, assignmentsRes, overridesRes, submissionsRes] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -23,18 +23,24 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
       supabase.from("requirements").select("case_type_id, required_count"),
       supabase
         .from("case_logs")
-        .select("id, date, notes, case_type_id, case_types(name), areas_of_duty(name)")
+        .select("id, date, notes, case_type_id, case_types(name), areas_of_duty(name), rotation_id, rotations(name)")
         .eq("student_id", id)
         .order("date", { ascending: false }),
       supabase
         .from("assignments")
-        .select("id, scheduled_date, end_date, shift_id, status, notes, areas_of_duty(name), shifts(name)")
+        .select("id, scheduled_date, end_date, shift_id, status, notes, rotation_id, areas_of_duty(name), shifts(name), rotations(id, name, start_date, end_date)")
         .eq("student_id", id)
         .order("scheduled_date", { ascending: false }),
       supabase
         .from("requirement_overrides")
         .select("case_type_id, adjusted_count, reason")
         .eq("student_id", id),
+      supabase
+        .from("case_submissions")
+        .select("id, date, submitted_at, status, notes, case_types(name), areas_of_duty(name), rotations(name)")
+        .eq("student_id", id)
+        .neq("status", "approved")
+        .order("submitted_at", { ascending: false }),
     ]);
 
   if (!profileRes.data) notFound();
@@ -81,6 +87,8 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
     case_type_id: string;
     case_types: { name: string } | null;
     areas_of_duty: { name: string } | null;
+    rotation_id: string | null;
+    rotations: { name: string } | null;
   };
 
   type AssignmentRow = {
@@ -90,12 +98,47 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
     shift_id: string | null;
     status: string;
     notes: string | null;
+    rotation_id: string | null;
     areas_of_duty: { name: string } | null;
     shifts: { name: string } | null;
+    rotations: { id: string; name: string; start_date: string; end_date: string } | null;
+  };
+
+  type SubmissionRow = {
+    id: string;
+    date: string;
+    submitted_at: string;
+    status: string;
+    notes: string | null;
+    case_types: { name: string } | null;
+    areas_of_duty: { name: string } | null;
+    rotations: { name: string } | null;
   };
 
   const typedLogs = caseLogs as unknown as CaseLogRow[];
   const typedAssignments = assignments as unknown as AssignmentRow[];
+  const submissions = (submissionsRes.data ?? []) as unknown as SubmissionRow[];
+
+  // Group assignments by rotation
+  const rotationMap = new Map<string, {
+    id: string; name: string; start_date: string; end_date: string;
+    assignments: AssignmentRow[];
+  }>();
+  for (const a of typedAssignments) {
+    if (a.rotation_id && a.rotations) {
+      if (!rotationMap.has(a.rotation_id)) {
+        rotationMap.set(a.rotation_id, {
+          id: a.rotation_id,
+          name: a.rotations.name,
+          start_date: a.rotations.start_date,
+          end_date: a.rotations.end_date,
+          assignments: [],
+        });
+      }
+      rotationMap.get(a.rotation_id)!.assignments.push(a);
+    }
+  }
+  const rotations = Array.from(rotationMap.values());
 
   const statusColors: Record<string, string> = {
     scheduled: "bg-accent/20 text-accent",
@@ -231,6 +274,83 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
         reqMap={baseReqMap}
       />
 
+      {/* Rotations */}
+      {rotations.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-(--text-secondary) uppercase tracking-wider">
+            Rotations ({rotations.length})
+          </h2>
+          <div className="space-y-2">
+            {rotations.map((rot) => {
+              const total = rot.assignments.length;
+              const completed = rot.assignments.filter((a) => a.status === "completed").length;
+              const areas = [...new Set(rot.assignments.map((a) => a.areas_of_duty?.name).filter(Boolean))];
+              return (
+                <div key={rot.id} className="rounded-xl border border-border bg-surface px-4 py-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{rot.name}</p>
+                      <p className="text-xs text-(--text-muted) mt-0.5">
+                        {new Date(rot.start_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                        {" – "}
+                        {new Date(rot.end_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                      {areas.length > 0 && (
+                        <p className="text-xs text-(--text-muted) mt-0.5">{areas.join(" · ")}</p>
+                      )}
+                    </div>
+                    <span className="text-xs text-(--text-muted)">
+                      {completed}/{total} completed
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Pending & Rejected Submissions */}
+      {submissions.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-(--text-secondary) uppercase tracking-wider">
+            Submissions ({submissions.length})
+          </h2>
+          <div className="overflow-hidden rounded-xl border border-border bg-surface">
+            <div className="divide-y divide-border">
+              {submissions.map((s) => (
+                <div key={s.id} className="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{s.case_types?.name ?? "—"}</p>
+                    <p className="text-xs text-(--text-muted)">
+                      {s.areas_of_duty?.name ?? "—"}
+                      {s.rotations?.name && <> · {s.rotations.name}</>}
+                      {" · "}
+                      {new Date(s.submitted_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${
+                      s.status === "pending" ? "bg-amber-500/20 text-amber-400" : "bg-red-500/20 text-red-400"
+                    }`}>
+                      {s.status}
+                    </span>
+                    {s.status === "pending" && (
+                      <Link
+                        href={`/admin/cases/review/${s.id}`}
+                        className="text-xs font-medium text-accent hover:underline"
+                      >
+                        Review
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Case Log History */}
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-(--text-secondary) uppercase tracking-wider">
@@ -244,13 +364,16 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
               {typedLogs.map((log) => (
                 <div
                   key={log.id}
-                  className="grid grid-cols-[1fr_1fr_120px] gap-2 items-center px-4 py-3"
+                  className="grid grid-cols-[1fr_1fr_1fr_120px] gap-2 items-center px-4 py-3"
                 >
                   <span className="text-sm text-foreground">
                     {log.case_types?.name ?? "—"}
                   </span>
                   <span className="text-sm text-(--text-secondary)">
                     {log.areas_of_duty?.name ?? "—"}
+                  </span>
+                  <span className="text-sm text-(--text-muted)">
+                    {log.rotations?.name ?? "—"}
                   </span>
                   <span className="text-sm text-(--text-muted) text-right">
                     {log.date
@@ -262,7 +385,7 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
                       : "—"}
                   </span>
                   {log.notes && (
-                    <p className="col-span-3 text-xs text-(--text-muted) -mt-1 pb-1">
+                    <p className="col-span-4 text-xs text-(--text-muted) -mt-1 pb-1">
                       {log.notes}
                     </p>
                   )}
