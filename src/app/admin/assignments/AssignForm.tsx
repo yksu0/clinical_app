@@ -11,10 +11,6 @@ type Rotation = { id: string; name: string; start_date: string; end_date: string
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function formatInclusiveDays(days: number[] | null): string {
-  if (!days || days.length === 0) return "";
-  return days.map((d) => WEEKDAY_LABELS[d]).join(", ");
-}
 type RecommendedStudent = {
   id: string;
   full_name: string;
@@ -53,10 +49,27 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
   const [filterMode, setFilterMode] = useState<"all" | "low_exposure">("all");
   const [warnings, setWarnings] = useState<ConflictWarning[]>([]);
   const [selectedRotationId, setSelectedRotationId] = useState("");
-  const [dateError, setDateError] = useState<string | null>(null);
+  const [inclusiveDays, setInclusiveDays] = useState<Set<number>>(new Set());
+  const [dateValue, setDateValue] = useState("");
 
   const selectedRotation = rotations.find((r) => r.id === selectedRotationId) ?? null;
   const [, startTransition] = useTransition();
+
+  const toggleInclusiveDay = useCallback((day: number) => {
+    setInclusiveDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(day)) next.delete(day);
+      else next.add(day);
+      return next;
+    });
+  }, []);
+
+  const weekdayError = useMemo(() => {
+    if (inclusiveDays.size === 0 || !dateValue) return null;
+    const day = new Date(dateValue + "T00:00:00").getDay();
+    if (inclusiveDays.has(day)) return null;
+    return `${new Date(dateValue + "T00:00:00").toLocaleDateString("en-AU", { weekday: "long" })} is not a selected duty day.`;
+  }, [inclusiveDays, dateValue]);
 
   const toggleStudent = useCallback((id: string) => {
     setSelected((prev) => {
@@ -190,6 +203,7 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
           ) : (
             <input type="hidden" name="student_id" value={Array.from(selected)[0] ?? ""} />
           )}
+          <input type="hidden" name="inclusive_days" value={JSON.stringify([...inclusiveDays].sort((a, b) => a - b))} />
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
@@ -220,11 +234,6 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
                 </span>
               )}
             </label>
-            {selectedRotation && selectedRotation.inclusive_days && selectedRotation.inclusive_days.length > 0 && (
-              <p className="mb-1.5 text-xs text-(--text-muted)">
-                Allowed days: <span className="text-accent font-medium">{formatInclusiveDays(selectedRotation.inclusive_days)}</span>
-              </p>
-            )}
             <input
               type="date"
               name="scheduled_date"
@@ -233,20 +242,9 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
               max={selectedRotation?.end_date ?? semesterWindow?.end ?? undefined}
               onChange={(e) => {
                 const val = e.target.value;
+                setDateValue(val);
                 const locSelect = document.querySelector<HTMLSelectElement>("select[name=area_of_duty_id]");
                 if (locSelect?.value) handleCheckConflicts(val, locSelect.value);
-
-                // Validate against inclusive_days
-                if (selectedRotation?.inclusive_days && selectedRotation.inclusive_days.length > 0 && val) {
-                  const dayOfWeek = new Date(val + "T00:00:00").getDay();
-                  if (!selectedRotation.inclusive_days.includes(dayOfWeek)) {
-                    setDateError(`${new Date(val + "T00:00:00").toLocaleDateString("en-AU", { weekday: "long" })} is not a duty day for this rotation. Allowed: ${formatInclusiveDays(selectedRotation.inclusive_days)}.`);
-                  } else {
-                    setDateError(null);
-                  }
-                } else {
-                  setDateError(null);
-                }
 
                 // Warn if outside semester window
                 if (semesterWindow && val) {
@@ -271,11 +269,11 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
                 }
               }}
               className={`w-full rounded-lg border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent ${
-                dateError ? "border-red-500/60" : "border-border"
+                weekdayError ? "border-red-500/60" : "border-border"
               }`}
             />
-            {dateError && (
-              <p className="mt-1 text-xs text-red-400">{dateError}</p>
+            {weekdayError && (
+              <p className="mt-1 text-xs text-red-400">{weekdayError}</p>
             )}
           </div>
 
@@ -303,7 +301,7 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
               value={selectedRotationId}
               onChange={(e) => {
                 setSelectedRotationId(e.target.value);
-                setDateError(null);
+                setDateValue("");
                 // Clear date so admin picks one within the new rotation's range
                 const dateInput = document.querySelector<HTMLInputElement>("input[name=scheduled_date]");
                 if (dateInput) dateInput.value = "";
@@ -314,10 +312,39 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
               {rotations.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name} ({r.start_date} – {r.end_date})
-                  {r.inclusive_days && r.inclusive_days.length > 0 ? ` · ${formatInclusiveDays(r.inclusive_days)}` : ""}
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
+              Duty Days <span className="text-(--text-muted) font-normal">(optional)</span>
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {WEEKDAY_LABELS.map((label, day) => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => toggleInclusiveDay(day)}
+                  className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    inclusiveDays.has(day)
+                      ? "bg-accent text-black"
+                      : "border border-border bg-elevated text-(--text-secondary) hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {inclusiveDays.size > 0 && (
+              <p className="mt-1.5 text-xs text-(--text-muted)">
+                Date must fall on:{" "}
+                <span className="text-foreground font-medium">
+                  {[...inclusiveDays].sort((a, b) => a - b).map((d) => WEEKDAY_LABELS[d]).join(", ")}
+                </span>
+              </p>
+            )}
           </div>
 
           <div>

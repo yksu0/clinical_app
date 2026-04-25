@@ -18,6 +18,8 @@ export async function createAssignment(formData: FormData) {
   const shiftId = (formData.get("shift_id") as string) || null;
   const rotationId = (formData.get("rotation_id") as string) || null;
   const notes = (formData.get("notes") as string) || null;
+  const inclusiveDaysRaw = (formData.get("inclusive_days") as string) || "[]";
+  const inclusiveDays = JSON.parse(inclusiveDaysRaw) as number[];
 
   if (!studentId || !areaOfDutyId || !scheduledDate) {
     return { error: "All fields are required." };
@@ -43,6 +45,7 @@ export async function createAssignment(formData: FormData) {
       rotation_id: rotationId,
       scheduled_date: scheduledDate,
       end_date: endDate,
+      inclusive_days: inclusiveDays,
       assigned_by: user.id,
       status: "scheduled",
       notes,
@@ -85,6 +88,8 @@ export async function bulkAssign(formData: FormData) {
   const shiftId = (formData.get("shift_id") as string) || null;
   const rotationId = (formData.get("rotation_id") as string) || null;
   const notes = (formData.get("notes") as string) || null;
+  const inclusiveDaysRaw = (formData.get("inclusive_days") as string) || "[]";
+  const inclusiveDays = JSON.parse(inclusiveDaysRaw) as number[];
 
   if (!studentIds || !areaOfDutyId || !scheduledDate) {
     return { error: "All fields are required." };
@@ -110,6 +115,7 @@ export async function bulkAssign(formData: FormData) {
     rotation_id: rotationId,
     scheduled_date: scheduledDate,
     end_date: endDate,
+    inclusive_days: inclusiveDays,
     assigned_by: user.id,
     status: "scheduled" as const,
     notes,
