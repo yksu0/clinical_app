@@ -149,7 +149,7 @@ export async function signup(formData: FormData) {
   const userId = signUpData?.user?.id;
   if (userId) {
     const serviceClient = createServiceClient();
-    await serviceClient.from("profiles").upsert(
+    const { error: upsertError } = await serviceClient.from("profiles").upsert(
       {
         id: userId,
         full_name: rosterEntry.full_name,
@@ -162,6 +162,9 @@ export async function signup(formData: FormData) {
       },
       { onConflict: "id" },
     );
+    if (upsertError) {
+      console.error("[signup] profile upsert failed for", userId, upsertError.message);
+    }
   }
 
   if (error) {
