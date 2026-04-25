@@ -57,8 +57,8 @@ export default function ReviewForm({
   return (
     <div className="space-y-6">
       {/* Approve form */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-white">
+      <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-foreground">
           Review &amp; Edit Details
         </h2>
 
@@ -181,8 +181,8 @@ export default function ReviewForm({
       </div>
 
       {/* Reject form — separate element, no nesting */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-red-400">
+      <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-(--status-rejected)">
           Reject Submission
         </h2>
 

@@ -83,25 +83,25 @@ export default async function ReviewDetailPage({
           className="inline-flex items-center gap-1.5 text-xs text-(--text-secondary) hover:text-foreground mb-4"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
-          Back to Review Queue
+          Back to Cases
         </Link>
-        <h1 className="text-2xl font-bold text-white">Review Submission</h1>
-        <p className="text-sm text-white/50 mt-1">
+        <h1 className="text-xl font-bold text-foreground">Review Submission</h1>
+        <p className="text-sm text-(--text-secondary) mt-1">
           Review and approve or reject this student case submission.
         </p>
       </div>
 
       {/* Submission metadata */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-1.5">
-        <p className="text-sm font-semibold text-white">
+      <div className="rounded-xl border border-border bg-surface p-4 space-y-1.5">
+        <p className="text-sm font-semibold text-foreground">
           {sub.profiles?.full_name ?? "Unknown Student"}
           {sub.profiles?.section && (
-            <span className="ml-2 text-xs text-white/40 font-normal">
+            <span className="ml-2 text-xs text-(--text-muted) font-normal">
               {sub.profiles.section}
             </span>
           )}
         </p>
-        <p className="text-xs text-white/50">
+        <p className="text-xs text-(--text-secondary)">
           Submitted on{" "}
           {new Date(sub.submitted_at).toLocaleDateString("en-AU", {
             weekday: "short",
@@ -110,7 +110,7 @@ export default async function ReviewDetailPage({
             year: "numeric",
           })}
         </p>
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-(--text-muted)">
           Originally reported: {sub.case_types?.name ?? "—"} at{" "}
           {sub.areas_of_duty?.name ?? "—"}
         </p>

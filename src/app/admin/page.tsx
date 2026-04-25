@@ -322,7 +322,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
             <AlertBanner
               type="info"
               message={`${totalPendingUploads} upload${totalPendingUploads !== 1 ? "s are" : " is"} awaiting review.`}
-              href="/admin/logging"
+              href="/admin/cases/review"
             />
           )}
         </div>
@@ -667,7 +667,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
               {/* Quick Actions */}
               <div className="flex gap-2 pt-1">
                 <Link
-                  href={`/admin/logging?student=${selectedStudent.id}`}
+                  href={`/admin/cases/review`}
                   className="flex-1 rounded-lg bg-accent/20 py-2 text-center text-xs font-semibold text-accent hover:bg-accent/30 transition-colors"
                 >
                   Log Case
