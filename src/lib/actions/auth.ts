@@ -149,11 +149,22 @@ export async function signup(formData: FormData) {
   const userId = signUpData?.user?.id;
   if (userId) {
     const serviceClient = createServiceClient();
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Remove any orphaned profile row with the same email but a different id.
+    // This can occur when a test/dev account is deleted from auth.users without
+    // the CASCADE reaching the profile (e.g. manual dashboard deletion).
+    await serviceClient
+      .from("profiles")
+      .delete()
+      .eq("email", normalizedEmail)
+      .neq("id", userId);
+
     const { error: upsertError } = await serviceClient.from("profiles").upsert(
       {
         id: userId,
         full_name: rosterEntry.full_name,
-        email: email.toLowerCase().trim(),
+        email: normalizedEmail,
         roster_id: rosterEntry.id,
         role: "student",
         section: (rosterEntry as { id: string; full_name: string; section: string | null }).section ?? null,
