@@ -87,7 +87,7 @@ export async function signup(formData: FormData) {
   // Verify the name exists in the pre-registered roster (case-insensitive)
   const { data: rosterRows } = await supabase
     .from("student_roster")
-    .select("id, full_name")
+    .select("id, full_name, section")
     .ilike("full_name", trimmedName)
     .limit(1);
 
@@ -122,6 +122,7 @@ export async function signup(formData: FormData) {
         email: email.toLowerCase().trim(),
         roster_id: rosterEntry.id,
         role: "student",
+        section: (rosterEntry as { id: string; full_name: string; section: string | null }).section ?? null,
         is_verified: false,
         is_active: true,
       },
