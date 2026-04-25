@@ -25,9 +25,25 @@ function levenshtein(a: string, b: string): number {
 }
 
 /**
+ * Token-overlap distance: returns 0 if every meaningful word in the input exists
+ * in the roster name (handles natural-order input like "Juan Dela Cruz" matching
+ * the stored "DELA CRUZ, JUAN A."). Returns Infinity if the tokens don't overlap.
+ */
+function tokenOverlapDist(input: string, rosterName: string): number {
+  const toTokens = (s: string) =>
+    s.toUpperCase().replace(/[^A-Z\s]/g, " ").split(/\s+/).filter((t) => t.length >= 2);
+  const inputTokens = toTokens(input);
+  if (inputTokens.length < 2) return Infinity;
+  const rosterSet = new Set(toTokens(rosterName));
+  const matched = inputTokens.filter((t) => rosterSet.has(t)).length;
+  return matched === inputTokens.length ? 0 : Infinity;
+}
+
+/**
  * Called client-side on the signup form to surface "did you mean?" suggestions.
  * Returns up to 3 similar names from the roster; empty array if the input
  * already matches exactly or is too short.
+ * Handles both exact-format ("DELA CRUZ, JUAN A.") and natural-order ("Juan Dela Cruz") input.
  */
 export async function findSimilarNames(rawInput: string): Promise<string[]> {
   const input = rawInput.trim();
@@ -51,7 +67,11 @@ export async function findSimilarNames(rawInput: string): Promise<string[]> {
   const threshold = Math.max(1, Math.min(3, Math.floor(normalized.length * 0.25)));
 
   return all
-    .map((r) => ({ name: r.full_name, dist: levenshtein(normalized, r.full_name.toLowerCase()) }))
+    .map((r) => {
+      const levDist = levenshtein(normalized, r.full_name.toLowerCase());
+      const tokDist = tokenOverlapDist(input, r.full_name);
+      return { name: r.full_name, dist: Math.min(levDist, tokDist) };
+    })
     .filter((r) => r.dist <= threshold)
     .sort((a, b) => a.dist - b.dist)
     .slice(0, 3)
