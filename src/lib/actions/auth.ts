@@ -107,7 +107,7 @@ export async function signup(formData: FormData) {
   // Verify the name exists in the pre-registered roster (case-insensitive)
   const { data: rosterRows } = await supabase
     .from("student_roster")
-    .select("id, full_name, section")
+    .select("id, full_name, section, email")
     .ilike("full_name", trimmedName)
     .limit(1);
 
@@ -115,6 +115,12 @@ export async function signup(formData: FormData) {
 
   if (!rosterEntry) {
     redirect("/signup?error=name_not_found");
+  }
+
+  // If the admin pre-assigned an email for this student, enforce it
+  const rosterEmail = (rosterEntry as { id: string; full_name: string; section: string | null; email: string | null }).email;
+  if (rosterEmail && rosterEmail.toLowerCase() !== email.toLowerCase().trim()) {
+    redirect("/signup?error=email_mismatch");
   }
 
   const headersList = await headers();
