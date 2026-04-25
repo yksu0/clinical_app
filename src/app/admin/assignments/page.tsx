@@ -19,7 +19,7 @@ export default async function AssignmentsPage() {
     await Promise.all([
       supabase.from("areas_of_duty").select("id, name").eq("is_active", true).order("name"),
       supabase.from("shifts").select("id, name").eq("is_active", true).order("name"),
-      supabase.from("rotations").select("id, name, start_date, end_date").order("start_date", { ascending: false }),
+      supabase.from("rotations").select("id, name, start_date, end_date, inclusive_days").order("start_date", { ascending: false }),
       supabase
         .from("profiles")
         .select("id, full_name, section")

@@ -7,7 +7,14 @@ import SubmitButton from "@/components/ui/SubmitButton";
 
 type AreaOfDuty = { id: string; name: string };
 type Shift = { id: string; name: string };
-type Rotation = { id: string; name: string; start_date: string; end_date: string };
+type Rotation = { id: string; name: string; start_date: string; end_date: string; inclusive_days: number[] | null };
+
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function formatInclusiveDays(days: number[] | null): string {
+  if (!days || days.length === 0) return "";
+  return days.map((d) => WEEKDAY_LABELS[d]).join(", ");
+}
 type RecommendedStudent = {
   id: string;
   full_name: string;
@@ -45,6 +52,10 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
   const [sortBy, setSortBy] = useState<SortKey>("priority");
   const [filterMode, setFilterMode] = useState<"all" | "low_exposure">("all");
   const [warnings, setWarnings] = useState<ConflictWarning[]>([]);
+  const [selectedRotationId, setSelectedRotationId] = useState("");
+  const [dateError, setDateError] = useState<string | null>(null);
+
+  const selectedRotation = rotations.find((r) => r.id === selectedRotationId) ?? null;
   const [, startTransition] = useTransition();
 
   const toggleStudent = useCallback((id: string) => {
@@ -202,28 +213,46 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-              Start Date <span className="text-(--status-rejected)">*</span>
-              {semesterWindow && (
+              Date <span className="text-(--status-rejected)">*</span>
+              {semesterWindow && !selectedRotation && (
                 <span className="ml-1 text-(--text-muted) font-normal">
                   ({semesterWindow.name})
                 </span>
               )}
             </label>
+            {selectedRotation && selectedRotation.inclusive_days && selectedRotation.inclusive_days.length > 0 && (
+              <p className="mb-1.5 text-xs text-(--text-muted)">
+                Allowed days: <span className="text-accent font-medium">{formatInclusiveDays(selectedRotation.inclusive_days)}</span>
+              </p>
+            )}
             <input
               type="date"
               name="scheduled_date"
               required
-              min={semesterWindow?.start ?? undefined}
-              max={semesterWindow?.end ?? undefined}
+              min={selectedRotation?.start_date ?? semesterWindow?.start ?? undefined}
+              max={selectedRotation?.end_date ?? semesterWindow?.end ?? undefined}
               onChange={(e) => {
+                const val = e.target.value;
                 const locSelect = document.querySelector<HTMLSelectElement>("select[name=area_of_duty_id]");
-                if (locSelect?.value) handleCheckConflicts(e.target.value, locSelect.value);
+                if (locSelect?.value) handleCheckConflicts(val, locSelect.value);
+
+                // Validate against inclusive_days
+                if (selectedRotation?.inclusive_days && selectedRotation.inclusive_days.length > 0 && val) {
+                  const dayOfWeek = new Date(val + "T00:00:00").getDay();
+                  if (!selectedRotation.inclusive_days.includes(dayOfWeek)) {
+                    setDateError(`${new Date(val + "T00:00:00").toLocaleDateString("en-AU", { weekday: "long" })} is not a duty day for this rotation. Allowed: ${formatInclusiveDays(selectedRotation.inclusive_days)}.`);
+                  } else {
+                    setDateError(null);
+                  }
+                } else {
+                  setDateError(null);
+                }
+
                 // Warn if outside semester window
-                if (semesterWindow && e.target.value) {
-                  const d = e.target.value;
+                if (semesterWindow && val) {
                   const outOfRange =
-                    d < semesterWindow.start ||
-                    (semesterWindow.end ? d > semesterWindow.end : false);
+                    val < semesterWindow.start ||
+                    (semesterWindow.end ? val > semesterWindow.end : false);
                   if (outOfRange) {
                     setWarnings((prev) => {
                       const filtered = prev.filter((w) => w.type !== "out_of_semester");
@@ -241,21 +270,13 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
                   }
                 }
               }}
-              className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+              className={`w-full rounded-lg border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent ${
+                dateError ? "border-red-500/60" : "border-border"
+              }`}
             />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-              End Date <span className="text-(--text-muted) font-normal">(optional, for multi-day)</span>
-            </label>
-            <input
-              type="date"
-              name="end_date"
-              min={semesterWindow?.start ?? undefined}
-              max={semesterWindow?.end ?? undefined}
-              className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-            />
+            {dateError && (
+              <p className="mt-1 text-xs text-red-400">{dateError}</p>
+            )}
           </div>
 
           <div>
@@ -279,12 +300,21 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
             </label>
             <select
               name="rotation_id"
+              value={selectedRotationId}
+              onChange={(e) => {
+                setSelectedRotationId(e.target.value);
+                setDateError(null);
+                // Clear date so admin picks one within the new rotation's range
+                const dateInput = document.querySelector<HTMLInputElement>("input[name=scheduled_date]");
+                if (dateInput) dateInput.value = "";
+              }}
               className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
             >
               <option value="">No rotation</option>
               {rotations.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name} ({r.start_date} – {r.end_date})
+                  {r.inclusive_days && r.inclusive_days.length > 0 ? ` · ${formatInclusiveDays(r.inclusive_days)}` : ""}
                 </option>
               ))}
             </select>
