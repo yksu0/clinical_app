@@ -48,7 +48,7 @@ export async function proxy(request: NextRequest) {
     const role: string = (user.app_metadata?.role as string) ?? "student";
 
     // Logged in → redirect away from auth pages or root to role dashboard
-    if ((isPublic && pathname !== "/auth/callback") || pathname === "/") {
+    if ((isPublic && pathname !== "/auth/callback" && pathname !== "/reset-password") || pathname === "/") {
       const url = request.nextUrl.clone();
       url.pathname =
         role === "admin" ? "/admin" : role === "ci" ? "/ci" : "/student";
