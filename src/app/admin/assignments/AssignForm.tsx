@@ -50,7 +50,8 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
   const [warnings, setWarnings] = useState<ConflictWarning[]>([]);
   const [selectedRotationId, setSelectedRotationId] = useState("");
   const [inclusiveDays, setInclusiveDays] = useState<Set<number>>(new Set());
-  const [dateValue, setDateValue] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const selectedRotation = rotations.find((r) => r.id === selectedRotationId) ?? null;
   const [, startTransition] = useTransition();
@@ -63,13 +64,6 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
       return next;
     });
   }, []);
-
-  const weekdayError = useMemo(() => {
-    if (inclusiveDays.size === 0 || !dateValue) return null;
-    const day = new Date(dateValue + "T00:00:00").getDay();
-    if (inclusiveDays.has(day)) return null;
-    return `${new Date(dateValue + "T00:00:00").toLocaleDateString("en-AU", { weekday: "long" })} is not a selected duty day.`;
-  }, [inclusiveDays, dateValue]);
 
   const toggleStudent = useCallback((id: string) => {
     setSelected((prev) => {
@@ -225,56 +219,60 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
             </select>
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-              Date <span className="text-(--status-rejected)">*</span>
-              {semesterWindow && !selectedRotation && (
-                <span className="ml-1 text-(--text-muted) font-normal">
-                  ({semesterWindow.name})
-                </span>
-              )}
-            </label>
-            <input
-              type="date"
-              name="scheduled_date"
-              required
-              min={selectedRotation?.start_date ?? semesterWindow?.start ?? undefined}
-              max={selectedRotation?.end_date ?? semesterWindow?.end ?? undefined}
-              onChange={(e) => {
-                const val = e.target.value;
-                setDateValue(val);
-                const locSelect = document.querySelector<HTMLSelectElement>("select[name=area_of_duty_id]");
-                if (locSelect?.value) handleCheckConflicts(val, locSelect.value);
-
-                // Warn if outside semester window
-                if (semesterWindow && val) {
-                  const outOfRange =
-                    val < semesterWindow.start ||
-                    (semesterWindow.end ? val > semesterWindow.end : false);
-                  if (outOfRange) {
-                    setWarnings((prev) => {
-                      const filtered = prev.filter((w) => w.type !== "out_of_semester");
-                      return [
-                        ...filtered,
-                        {
-                          type: "out_of_semester" as const,
-                          studentName: "All",
-                          reason: `Date is outside the active semester (${semesterWindow.start}${semesterWindow.end ? ` – ${semesterWindow.end}` : ""})`,
-                        },
-                      ];
-                    });
-                  } else {
-                    setWarnings((prev) => prev.filter((w) => w.type !== "out_of_semester"));
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
+                Start Date <span className="text-(--status-rejected)">*</span>
+              </label>
+              <input
+                type="date"
+                name="scheduled_date"
+                required
+                min={selectedRotation?.start_date ?? semesterWindow?.start ?? undefined}
+                max={endDate || selectedRotation?.end_date || semesterWindow?.end || undefined}
+                value={startDate}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setStartDate(val);
+                  // Auto-set end date to +6 days (full week) if not yet set
+                  if (val && !endDate) {
+                    const d = new Date(val + "T00:00:00");
+                    d.setDate(d.getDate() + 6);
+                    const iso = d.toISOString().slice(0, 10);
+                    setEndDate(iso);
                   }
-                }
-              }}
-              className={`w-full rounded-lg border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent ${
-                weekdayError ? "border-red-500/60" : "border-border"
-              }`}
-            />
-            {weekdayError && (
-              <p className="mt-1 text-xs text-red-400">{weekdayError}</p>
-            )}
+                  const locSelect = document.querySelector<HTMLSelectElement>("select[name=area_of_duty_id]");
+                  if (locSelect?.value) handleCheckConflicts(val, locSelect.value);
+                  if (semesterWindow && val) {
+                    const outOfRange = val < semesterWindow.start || (semesterWindow.end ? val > semesterWindow.end : false);
+                    if (outOfRange) {
+                      setWarnings((prev) => {
+                        const filtered = prev.filter((w) => w.type !== "out_of_semester");
+                        return [...filtered, { type: "out_of_semester" as const, studentName: "All", reason: `Date range is outside the active semester (${semesterWindow.start}${semesterWindow.end ? ` – ${semesterWindow.end}` : ""})` }];
+                      });
+                    } else {
+                      setWarnings((prev) => prev.filter((w) => w.type !== "out_of_semester"));
+                    }
+                  }
+                }}
+                className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
+                End Date <span className="text-(--status-rejected)">*</span>
+              </label>
+              <input
+                type="date"
+                name="end_date"
+                required
+                min={startDate || selectedRotation?.start_date || semesterWindow?.start || undefined}
+                max={selectedRotation?.end_date ?? semesterWindow?.end ?? undefined}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
           </div>
 
           <div>
@@ -301,7 +299,8 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
               value={selectedRotationId}
               onChange={(e) => {
                 setSelectedRotationId(e.target.value);
-                setDateValue("");
+                setStartDate("");
+                setEndDate("");
                 // Clear date so admin picks one within the new rotation's range
                 const dateInput = document.querySelector<HTMLInputElement>("input[name=scheduled_date]");
                 if (dateInput) dateInput.value = "";
