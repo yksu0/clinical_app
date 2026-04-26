@@ -3,6 +3,8 @@ import {
   verifyStudent,
   toggleStudentActive,
   removeFromRoster,
+  updateStudentSection,
+  updateRosterEntrySection,
 } from "./actions";
 import SubmitButton from "@/components/ui/SubmitButton";
 import BulkAddForm from "./BulkAddForm";
@@ -54,18 +56,27 @@ export default async function RosterPage() {
               {pendingApproval.map((s) => (
                 <li
                   key={s.id}
-                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                  className="flex flex-wrap items-center gap-3 px-4 py-3"
                 >
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-foreground">
                       {s.full_name}
                     </p>
-                    <p className="text-xs text-(--text-muted)">
-                      {s.email}
-                      {s.section ? ` · ${s.section}` : ""}
-                    </p>
+                    <p className="text-xs text-(--text-muted)">{s.email}</p>
                   </div>
-                  <div className="flex gap-2">
+                  <form action={updateStudentSection} className="flex items-center gap-1.5 shrink-0">
+                    <input type="hidden" name="id" value={s.id} />
+                    <input
+                      name="section"
+                      defaultValue={s.section ?? ""}
+                      placeholder="Section"
+                      className="w-24 rounded-md border border-border bg-elevated px-2 py-1 text-xs text-foreground placeholder:text-(--text-muted) focus:border-accent focus:outline-none"
+                    />
+                    <button type="submit" className="text-xs font-medium text-accent hover:text-accent/70 transition-colors">
+                      Set
+                    </button>
+                  </form>
+                  <div className="flex gap-2 shrink-0">
                     <form action={verifyStudent}>
                       <input type="hidden" name="id" value={s.id} />
                       <SubmitButton label="Approve" loadingLabel="…" />
@@ -93,9 +104,9 @@ export default async function RosterPage() {
               {activeStudents.map((s) => (
                 <li
                   key={s.id}
-                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                  className="flex flex-wrap items-center gap-3 px-4 py-3"
                 >
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p
                       className={`text-sm font-medium ${
                         s.is_active ? "text-foreground" : "text-(--text-muted) line-through"
@@ -103,12 +114,21 @@ export default async function RosterPage() {
                     >
                       {s.full_name}
                     </p>
-                    <p className="text-xs text-(--text-muted)">
-                      {s.email}
-                      {s.section ? ` · Section ${s.section}` : ""}
-                    </p>
+                    <p className="text-xs text-(--text-muted)">{s.email}</p>
                   </div>
-                  <form action={toggleStudentActive}>
+                  <form action={updateStudentSection} className="flex items-center gap-1.5 shrink-0">
+                    <input type="hidden" name="id" value={s.id} />
+                    <input
+                      name="section"
+                      defaultValue={s.section ?? ""}
+                      placeholder="Section"
+                      className="w-24 rounded-md border border-border bg-elevated px-2 py-1 text-xs text-foreground placeholder:text-(--text-muted) focus:border-accent focus:outline-none"
+                    />
+                    <button type="submit" className="text-xs font-medium text-accent hover:text-accent/70 transition-colors">
+                      Set
+                    </button>
+                  </form>
+                  <form action={toggleStudentActive} className="shrink-0">
                     <input type="hidden" name="id" value={s.id} />
                     <input
                       type="hidden"
@@ -147,18 +167,29 @@ export default async function RosterPage() {
               {unclaimedRoster.map((r) => (
                 <li
                   key={r.id}
-                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                  className="flex flex-wrap items-center gap-3 px-4 py-3"
                 >
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-foreground">
                       {r.full_name}
                     </p>
                     <p className="text-xs text-(--text-muted)">
                       {r.email ?? "No email"}
-                      {r.section ? ` · ${r.section}` : ""}
                     </p>
                   </div>
-                  <form action={removeFromRoster}>
+                  <form action={updateRosterEntrySection} className="flex items-center gap-1.5 shrink-0">
+                    <input type="hidden" name="id" value={r.id} />
+                    <input
+                      name="section"
+                      defaultValue={r.section ?? ""}
+                      placeholder="Section"
+                      className="w-24 rounded-md border border-border bg-elevated px-2 py-1 text-xs text-foreground placeholder:text-(--text-muted) focus:border-accent focus:outline-none"
+                    />
+                    <button type="submit" className="text-xs font-medium text-accent hover:text-accent/70 transition-colors">
+                      Set
+                    </button>
+                  </form>
+                  <form action={removeFromRoster} className="shrink-0">
                     <input type="hidden" name="id" value={r.id} />
                     <SubmitButton
                       label="Remove"

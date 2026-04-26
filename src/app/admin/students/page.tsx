@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import StudentsTable from "./StudentsTable";
 
 interface PageProps {
   searchParams: Promise<{ search?: string; section?: string }>;
@@ -115,65 +116,7 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
       </form>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-border bg-surface">
-        <div className="grid grid-cols-[1fr_60px_90px] gap-2 border-b border-border bg-elevated px-4 py-2.5">
-          <span className="text-xs font-semibold uppercase tracking-wider text-(--text-muted)">
-            Student
-          </span>
-          <span className="text-xs font-semibold uppercase tracking-wider text-(--text-muted) text-center">
-            Cases
-          </span>
-          <span className="text-xs font-semibold uppercase tracking-wider text-(--text-muted) text-right">
-            Progress
-          </span>
-        </div>
-
-        {sorted.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-(--text-muted)">
-            {search ? "No students match your search." : "No students found."}
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {sorted.map((s) => (
-              <Link
-                key={s.id}
-                href={`/admin/students/${s.id}`}
-                className="grid grid-cols-[1fr_60px_90px] gap-2 items-center px-4 py-3 hover:bg-elevated transition-colors"
-              >
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {s.full_name}
-                  </p>
-                  <p className="text-xs text-(--text-muted)">
-                    {s.email}
-                    {!s.is_verified && (
-                      <span className="ml-2 text-xs text-amber-400">
-                        Unverified
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <p className="text-sm text-(--text-secondary) text-center">
-                  {s.total}
-                </p>
-                <div className="text-right">
-                  <span
-                    className={`text-sm font-semibold ${
-                      s.pct >= 100
-                        ? "text-green-400"
-                        : s.pct >= 50
-                          ? "text-accent"
-                          : "text-red-400"
-                    }`}
-                  >
-                    {s.pct}%
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+      <StudentsTable students={sorted} />
     </div>
   );
 }

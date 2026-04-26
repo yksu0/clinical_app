@@ -117,3 +117,38 @@ export async function removeFromRoster(formData: FormData) {
   await supabase.from("student_roster").delete().eq("id", id);
   revalidatePath("/admin/roster");
 }
+
+/** Update the section for a signed-up student profile */
+export async function updateStudentSection(formData: FormData) {
+  const id = formData.get("id") as string;
+  const section = ((formData.get("section") as string) ?? "").trim() || null;
+  if (!id) return;
+
+  const supabase = await createClient();
+  await supabase.from("profiles").update({ section }).eq("id", id);
+  revalidatePath("/admin/roster");
+  revalidatePath("/admin/students");
+}
+
+/** Bulk-assign the same section to multiple student profiles */
+export async function bulkUpdateStudentSection(formData: FormData) {
+  const ids = formData.getAll("student_ids") as string[];
+  const section = ((formData.get("section") as string) ?? "").trim() || null;
+  if (!ids.length) return;
+
+  const supabase = await createClient();
+  await supabase.from("profiles").update({ section }).in("id", ids);
+  revalidatePath("/admin/roster");
+  revalidatePath("/admin/students");
+}
+
+/** Update the section for a pre-registration whitelist entry */
+export async function updateRosterEntrySection(formData: FormData) {
+  const id = formData.get("id") as string;
+  const section = ((formData.get("section") as string) ?? "").trim() || null;
+  if (!id) return;
+
+  const supabase = await createClient();
+  await supabase.from("student_roster").update({ section }).eq("id", id);
+  revalidatePath("/admin/roster");
+}
