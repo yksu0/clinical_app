@@ -207,3 +207,42 @@ export async function logout() {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+/** Send a password-reset email. Always shows success to prevent email enumeration. */
+export async function requestPasswordReset(formData: FormData) {
+  const email = ((formData.get("email") as string) ?? "").trim().toLowerCase();
+  if (!email) redirect("/forgot-password?error=missing_email");
+
+  const headersList = await headers();
+  const origin = headersList.get("origin") ?? "https://clinicalapp-vert.vercel.app";
+
+  const supabase = await createClient();
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=/reset-password`,
+  });
+
+  // Always redirect to success — never reveal whether the email exists
+  redirect("/forgot-password?success=check_email");
+}
+
+/** Update the authenticated user's password (called from /reset-password). */
+export async function resetPassword(formData: FormData) {
+  const password = (formData.get("password") as string) ?? "";
+  const confirm = (formData.get("confirm") as string) ?? "";
+
+  if (!password || password.length < 8) {
+    redirect("/reset-password?error=too_short");
+  }
+  if (password !== confirm) {
+    redirect("/reset-password?error=mismatch");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    redirect("/reset-password?error=update_failed");
+  }
+
+  redirect("/login?success=password_reset");
+}

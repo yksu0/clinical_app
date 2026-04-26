@@ -27,11 +27,32 @@ function SubmitBtn() {
   );
 }
 
-export default function LoginForm() {
+export default function LoginForm({
+  error,
+  success,
+}: {
+  error: string | null;
+  success: string | null;
+}) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <form action={login} className="space-y-5">
+      {success === "password_reset" && (
+        <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
+          <p className="text-xs text-green-400">Password updated — please sign in with your new password.</p>
+        </div>
+      )}
+      {error === "invalid_credentials" && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
+          <p className="text-xs text-red-400">Incorrect email or password.</p>
+        </div>
+      )}
+      {error === "auth_callback_failed" && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
+          <p className="text-xs text-red-400">Authentication failed. Please try again.</p>
+        </div>
+      )}
       <div>
         <label
           htmlFor="email"

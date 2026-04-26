@@ -1,15 +1,26 @@
-import LoginForm from "./LoginForm";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import ResetPasswordForm from "./ResetPasswordForm";
 import Link from "next/link";
 
 interface PageProps {
-  searchParams: Promise<{ error?: string; success?: string }>;
+  searchParams: Promise<{ error?: string }>;
 }
 
-export default async function LoginPage({ searchParams }: PageProps) {
-  const { error, success } = await searchParams;
+export default async function ResetPasswordPage({ searchParams }: PageProps) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // If no session (e.g. link expired or already used), send back to forgot-password
+  if (!user) {
+    redirect("/forgot-password?error=link_expired");
+  }
+
+  const { error } = await searchParams;
+
   return (
     <div className="rounded-xl border border-border bg-surface p-8 shadow-2xl">
-      {/* Logo / Brand */}
+      {/* Brand */}
       <div className="mb-8 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-accent">
           <svg
@@ -26,35 +37,23 @@ export default async function LoginPage({ searchParams }: PageProps) {
             />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-foreground">
-          Clinical Case Manager
-        </h1>
+        <h1 className="text-2xl font-bold text-foreground">Set new password</h1>
         <p className="mt-1 text-sm text-(--text-secondary)">
-          Sign in to your account
+          Choose a strong password for{" "}
+          <span className="text-foreground">{user.email}</span>
         </p>
       </div>
 
-      {/* Form */}
-      <LoginForm error={error ?? null} success={success ?? null} />
+      <ResetPasswordForm error={error ?? null} />
 
-      {/* Footer links */}
-      <div className="mt-6 flex flex-col gap-2 text-center text-sm">
+      <p className="mt-6 text-center text-sm text-(--text-muted)">
         <Link
-          href="/forgot-password"
-          className="text-(--text-muted) hover:text-foreground transition-colors"
+          href="/login"
+          className="font-medium text-accent hover:text-accent-hover transition-colors"
         >
-          Forgot your password?
+          Back to sign in
         </Link>
-        <p className="text-(--text-muted)">
-          Don&apos;t have an account?{" "}
-          <a
-            href="/signup"
-            className="font-medium text-accent hover:text-accent-hover transition-colors"
-          >
-            Request access
-          </a>
-        </p>
-      </div>
+      </p>
     </div>
   );
 }
