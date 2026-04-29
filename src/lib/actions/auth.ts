@@ -124,7 +124,7 @@ export async function signup(formData: FormData) {
   }
 
   const headersList = await headers();
-  const origin = headersList.get("origin") ?? "https://clinicalapp-vert.vercel.app";
+  const origin = headersList.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   const { data: signUpData, error } = await supabase.auth.signUp({
     email,
@@ -214,7 +214,7 @@ export async function requestPasswordReset(formData: FormData) {
   if (!email) redirect("/forgot-password?error=missing_email");
 
   const headersList = await headers();
-  const origin = headersList.get("origin") ?? "https://clinicalapp-vert.vercel.app";
+  const origin = headersList.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(email, {
