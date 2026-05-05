@@ -87,10 +87,7 @@ CREATE TABLE IF NOT EXISTS public.case_logs (
   logged_by uuid NOT NULL,
   created_at timestamptz DEFAULT now() NOT NULL,
   rotation_id uuid,
-  CONSTRAINT case_logs_pkey PRIMARY KEY (id),
-  CONSTRAINT case_logs_case_type_id_key UNIQUE (case_type_id),
-  CONSTRAINT case_logs_date_key UNIQUE (date),
-  CONSTRAINT case_logs_student_id_key UNIQUE (student_id)
+  CONSTRAINT case_logs_pkey PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS public.case_submissions (
@@ -143,9 +140,7 @@ CREATE TABLE IF NOT EXISTS public.requirement_overrides (
   reason text,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
-  CONSTRAINT requirement_overrides_pkey PRIMARY KEY (id),
-  CONSTRAINT requirement_overrides_case_type_id_key UNIQUE (case_type_id),
-  CONSTRAINT requirement_overrides_student_id_key UNIQUE (student_id)
+  CONSTRAINT requirement_overrides_pkey PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS public.requirements (
@@ -255,7 +250,6 @@ ALTER TABLE public.uploads ADD CONSTRAINT fk_uploads_student_id FOREIGN KEY (stu
 -- INDEXES
 -- ================================================================
 CREATE INDEX idx_announcement_comments_announcement_id ON public.announcement_comments USING btree (announcement_id);
-CREATE UNIQUE INDEX locations_name_key ON public.areas_of_duty USING btree (name);
 CREATE INDEX idx_assignments_rotation_id ON public.assignments USING btree (rotation_id);
 CREATE INDEX idx_assignments_status ON public.assignments USING btree (status);
 CREATE INDEX idx_assignments_student ON public.assignments USING btree (student_id);
@@ -269,10 +263,7 @@ CREATE INDEX idx_case_logs_student ON public.case_logs USING btree (student_id);
 CREATE INDEX idx_case_submissions_assignment_id ON public.case_submissions USING btree (assignment_id);
 CREATE INDEX idx_case_submissions_status ON public.case_submissions USING btree (status);
 CREATE INDEX idx_case_submissions_student_id ON public.case_submissions USING btree (student_id);
-CREATE UNIQUE INDEX case_types_name_key ON public.case_types USING btree (name);
-CREATE UNIQUE INDEX profiles_email_key ON public.profiles USING btree (email);
 CREATE UNIQUE INDEX requirement_overrides_student_id_case_type_id_key ON public.requirement_overrides USING btree (student_id, case_type_id);
-CREATE UNIQUE INDEX requirements_case_type_id_key ON public.requirements USING btree (case_type_id);
 CREATE UNIQUE INDEX semesters_active_unique ON public.semesters USING btree (is_active) WHERE (is_active = true);
 CREATE UNIQUE INDEX student_roster_full_name_unique ON public.student_roster USING btree (lower(full_name));
 CREATE INDEX idx_uploads_status ON public.uploads USING btree (status);
@@ -371,11 +362,7 @@ CREATE TRIGGER assignments_updated_at
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER on_profile_role_change
-  AFTER INSERT ON public.profiles
-  FOR EACH ROW EXECUTE FUNCTION sync_role_to_app_metadata();
-
-CREATE TRIGGER on_profile_role_change
-  AFTER UPDATE ON public.profiles
+  AFTER INSERT OR UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION sync_role_to_app_metadata();
 
 CREATE TRIGGER profiles_updated_at
