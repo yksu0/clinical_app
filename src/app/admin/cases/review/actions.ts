@@ -151,8 +151,8 @@ export async function logCase(formData: FormData) {
   const rotationId = (formData.get("rotation_id") as string) || null;
   const notes = ((formData.get("notes") as string) ?? "").trim() || null;
 
-  if (!studentId || !caseTypeId || !areaOfDutyId || !date) {
-    return { error: "Student, case type, area of duty and date are all required." };
+  if (!studentId || !caseTypeId || !areaOfDutyId) {
+    return { error: "Student, case type, and area of duty are all required." };
   }
 
   const { data: caseLog, error: logError } = await supabase
@@ -163,7 +163,7 @@ export async function logCase(formData: FormData) {
       area_of_duty_id: areaOfDutyId,
       rotation_id: rotationId,
       upload_id: null,
-      date,
+      date: date || null,
       notes,
       logged_by: user.id,
     })
@@ -185,16 +185,19 @@ export async function logCase(formData: FormData) {
     details: { student_id: studentId, case_type_id: caseTypeId, date, manual: true },
   });
 
-  // Auto-complete a matching open assignment
-  const { data: matchingAssignment } = await supabase
-    .from("assignments")
-    .select("id")
-    .eq("student_id", studentId)
-    .eq("area_of_duty_id", areaOfDutyId)
-    .eq("scheduled_date", date)
-    .in("status", ["scheduled", "cancel_requested"])
-    .limit(1)
-    .maybeSingle();
+  // Auto-complete a matching open assignment (only possible when a date is provided)
+  const matchingAssignment = date
+    ? (await supabase
+        .from("assignments")
+        .select("id")
+        .eq("student_id", studentId)
+        .eq("area_of_duty_id", areaOfDutyId)
+        .eq("scheduled_date", date)
+        .in("status", ["scheduled", "cancel_requested"])
+        .limit(1)
+        .maybeSingle()
+      ).data
+    : null;
 
   let assignmentCompleted = false;
   if (matchingAssignment) {

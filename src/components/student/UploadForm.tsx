@@ -72,7 +72,7 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
   // Form field state
   const [caseTypeId, setCaseTypeId] = useState("");
   const [areaOfDutyId, setAreaOfDutyId] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState("");
   const [rotationId, setRotationId] = useState("");
   const [assignmentId, setAssignmentId] = useState("");
   const [notes, setNotes] = useState("");
@@ -115,8 +115,8 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!file || status === "uploading") return;
-    if (!caseTypeId || !areaOfDutyId || !date) {
-      setError("Case type, area of duty, and date are required.");
+    if (!caseTypeId || !areaOfDutyId) {
+      setError("Case type and area of duty are required.");
       return;
     }
     setStatus("uploading");
@@ -294,13 +294,11 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
           {/* Date */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-              Date <span className="text-red-400">*</span>
+              Date <span className="text-(--text-muted) font-normal">(optional)</span>
             </label>
             <input
               type="date"
-              required
               value={date}
-              max={new Date().toISOString().slice(0, 10)}
               onChange={(e) => setDate(e.target.value)}
               className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
             />

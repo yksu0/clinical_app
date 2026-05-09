@@ -54,7 +54,7 @@ export async function createUploadAndSubmission(
   caseDetails: {
     caseTypeId: string;
     areaOfDutyId: string;
-    date: string;
+    date: string | null;
     rotationId: string | null;
     assignmentId: string | null;
     notes: string | null;
@@ -72,8 +72,8 @@ export async function createUploadAndSubmission(
   if (sizeBytes !== undefined && sizeBytes > MAX_SIZE_BYTES) {
     throw new Error("File exceeds 10 MB limit.");
   }
-  if (!caseDetails.caseTypeId || !caseDetails.areaOfDutyId || !caseDetails.date) {
-    throw new Error("Case type, area of duty, and date are required.");
+  if (!caseDetails.caseTypeId || !caseDetails.areaOfDutyId) {
+    throw new Error("Case type and area of duty are required.");
   }
 
   // Insert upload record first so we get its ID for the submission
@@ -100,7 +100,7 @@ export async function createUploadAndSubmission(
       area_of_duty_id: caseDetails.areaOfDutyId,
       rotation_id: caseDetails.rotationId,
       assignment_id: caseDetails.assignmentId,
-      date: caseDetails.date,
+      date: caseDetails.date || null,
       notes: caseDetails.notes,
       status: "pending",
     });

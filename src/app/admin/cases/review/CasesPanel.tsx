@@ -238,12 +238,11 @@ export default function CasesPanel({ pending, students, caseTypes, areasOfDuty, 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-                      Date <span className="text-(--status-rejected)">*</span>
+                      Date <span className="text-(--text-muted) font-normal">(optional)</span>
                     </label>
                     <input
                       type="date"
                       name="date"
-                      required
                       className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
                     />
                   </div>
