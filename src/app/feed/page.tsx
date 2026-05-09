@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AnnouncementCard, { type Comment } from "@/components/shared/AnnouncementCard";
-import { Bell, Users, ClipboardList, Megaphone } from "lucide-react";
+import { Users, ClipboardList, Megaphone } from "lucide-react";
 
 type Announcement = {
   id: string;
@@ -56,58 +56,75 @@ export default async function FeedPage() {
   return (
     <div className="min-h-full">
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden border-b border-border">
-        {/* Background banner image */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/hero-banner.png"
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover object-center"
+      <section className="relative overflow-hidden border-b border-border bg-background">
+        {/* Dot grid */}
+        <div
+          className="absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage: "radial-gradient(circle, var(--color-foreground, #fff) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
         />
-        {/* Dark overlay so text stays readable */}
-        <div className="absolute inset-0 bg-black/65" />
+        {/* Accent glow top-right */}
+        <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
+        {/* Soft glow bottom-left */}
+        <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-accent/8 blur-2xl pointer-events-none" />
 
         <div className="relative mx-auto max-w-3xl px-6 py-12 md:py-16">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
-              <Bell className="h-4 w-4 text-black" />
-            </div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-accent">
+          {/* Brand chip */}
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-accent">
               NurseSync
             </span>
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-3">
-            Clinicals, simplified.
+          {/* Heading — Space Grotesk display font */}
+          <h1
+            className="text-4xl md:text-5xl font-bold leading-[1.1] tracking-tight mb-4"
+            style={{ fontFamily: "var(--font-space-grotesk)" }}
+          >
+            <span className="text-foreground">Clinicals,{" "}</span>
+            <span
+              className="bg-clip-text text-transparent"
+              style={{ backgroundImage: "linear-gradient(135deg, var(--color-accent, #38bdf8) 0%, #818cf8 100%)" }}
+            >
+              simplified.
+            </span>
           </h1>
-          <p className="text-sm md:text-base text-(--text-secondary) max-w-lg">
-            Stay on top of your area assignments, shift schedules, case logs and clinical
-            advisories — synced in one central hub.
+
+          <p className="text-sm md:text-base text-(--text-secondary) max-w-md leading-relaxed">
+            Area assignments, shift schedules, case logs and clinical advisories — synced in one central hub.
           </p>
 
           {/* Stats row */}
-          <div className="mt-8 grid grid-cols-3 gap-4 max-w-sm">
-            <div className="rounded-xl border border-border bg-elevated p-3 text-center">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
+          <div className="mt-8 flex flex-wrap gap-3">
+            <div className="flex items-center gap-2.5 rounded-xl border border-border bg-surface/80 backdrop-blur px-4 py-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/15">
                 <Users className="h-3.5 w-3.5 text-accent" />
-                <span className="text-lg font-bold text-foreground">{totalStudents}</span>
               </div>
-              <p className="text-[11px] text-(--text-muted)">Students</p>
+              <div>
+                <p className="text-base font-bold text-foreground leading-none">{totalStudents}</p>
+                <p className="text-[11px] text-(--text-muted) mt-0.5">Students</p>
+              </div>
             </div>
-            <div className="rounded-xl border border-border bg-elevated p-3 text-center">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
+            <div className="flex items-center gap-2.5 rounded-xl border border-border bg-surface/80 backdrop-blur px-4 py-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/15">
                 <ClipboardList className="h-3.5 w-3.5 text-accent" />
-                <span className="text-lg font-bold text-foreground">{totalCases}</span>
               </div>
-              <p className="text-[11px] text-(--text-muted)">Cases Logged</p>
+              <div>
+                <p className="text-base font-bold text-foreground leading-none">{totalCases}</p>
+                <p className="text-[11px] text-(--text-muted) mt-0.5">Cases Logged</p>
+              </div>
             </div>
-            <div className="rounded-xl border border-border bg-elevated p-3 text-center">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
+            <div className="flex items-center gap-2.5 rounded-xl border border-border bg-surface/80 backdrop-blur px-4 py-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/15">
                 <Megaphone className="h-3.5 w-3.5 text-accent" />
-                <span className="text-lg font-bold text-foreground">{totalAnnouncements}</span>
               </div>
-              <p className="text-[11px] text-(--text-muted)">Posts</p>
+              <div>
+                <p className="text-base font-bold text-foreground leading-none">{totalAnnouncements}</p>
+                <p className="text-[11px] text-(--text-muted) mt-0.5">Announcements</p>
+              </div>
             </div>
           </div>
         </div>
