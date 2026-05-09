@@ -67,7 +67,7 @@ export default async function FeedPage() {
               <Bell className="h-4 w-4 text-black" />
             </div>
             <span className="text-xs font-semibold uppercase tracking-wider text-accent">
-              Clinical Cases
+              NurseSync
             </span>
           </div>
 
