@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
-import { FileText } from "lucide-react";
+import { useActionState, useState } from "react";
+import { FileText, X, ZoomIn } from "lucide-react";
 import { approveSubmission, rejectSubmission } from "../actions";
 import SubmitButton from "@/components/ui/SubmitButton";
 
@@ -58,8 +58,31 @@ export default function ReviewForm({
   );
 
   const isPdf = upload?.file_name.toLowerCase().endsWith(".pdf");
+  const [lightbox, setLightbox] = useState(false);
 
   return (
+    <>
+      {/* Lightbox overlay */}
+      {lightbox && signedUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightbox(false)}
+        >
+          <button
+            onClick={() => setLightbox(false)}
+            className="absolute top-4 right-4 rounded-full bg-black/60 p-2 text-white hover:bg-black/80 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={signedUrl}
+            alt={upload?.file_name}
+            className="max-w-full max-h-full rounded-lg object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     <div className="rounded-xl border border-border bg-surface overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-border">
@@ -72,13 +95,19 @@ export default function ReviewForm({
           <p className="text-xs font-semibold uppercase tracking-wider text-(--text-secondary)">Preview</p>
           {upload ? (
             signedUrl && !isPdf ? (
-              <div className="rounded-lg overflow-hidden border border-border bg-background flex-1 min-h-48">
+              <div
+                className="relative group rounded-lg overflow-hidden border border-border bg-background flex-1 min-h-48 cursor-zoom-in"
+                onClick={() => setLightbox(true)}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={signedUrl}
                   alt={upload.file_name}
                   className="w-full h-full object-contain max-h-96"
                 />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+                  <ZoomIn className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                </div>
               </div>
             ) : (
               <div className="rounded-lg border border-border bg-background flex flex-col items-center justify-center gap-2 py-12">
