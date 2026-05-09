@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import RequirementOverrides from "./RequirementOverrides";
+import EditProfileForm from "./EditProfileForm";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -159,7 +160,7 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
 
       {/* Header */}
       <div className="rounded-xl border border-border bg-surface p-6 space-y-4">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-foreground">
               {profile.full_name}
@@ -191,6 +192,11 @@ export default async function AdminStudentProfilePage({ params }: PageProps) {
               </span>
             </div>
           </div>
+          <EditProfileForm
+            studentId={profile.id}
+            fullName={profile.full_name}
+            section={profile.section ?? null}
+          />
           <div className="text-right">
             <p
               className={`text-2xl font-bold ${

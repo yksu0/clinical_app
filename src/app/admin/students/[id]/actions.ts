@@ -69,3 +69,34 @@ export async function removeOverride(formData: FormData) {
   revalidatePath(`/admin/students/${studentId}`);
   return { success: true };
 }
+
+export async function updateStudentProfile(formData: FormData) {
+  const studentId = formData.get("student_id") as string;
+  const fullName = (formData.get("full_name") as string)?.trim();
+  const section = ((formData.get("section") as string) ?? "").trim() || null;
+
+  if (!studentId || !fullName) return { error: "Name is required." };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized." };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ full_name: fullName, section })
+    .eq("id", studentId);
+
+  if (error) return { error: error.message };
+
+  await supabase.from("audit_logs").insert({
+    action_type: "student_profile_updated",
+    performed_by: user.id,
+    target_table: "profiles",
+    target_id: studentId,
+    details: { full_name: fullName, section },
+  });
+
+  revalidatePath(`/admin/students/${studentId}`);
+  revalidatePath("/admin/students");
+  return { success: true };
+}
