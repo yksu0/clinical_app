@@ -56,10 +56,17 @@ export default async function FeedPage() {
   return (
     <div className="min-h-full">
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-surface border-b border-border">
-        {/* Decorative accent glow */}
-        <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-accent/6 blur-3xl" />
+      <section className="relative overflow-hidden border-b border-border">
+        {/* Background banner image */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/hero-banner.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        {/* Dark overlay so text stays readable */}
+        <div className="absolute inset-0 bg-black/65" />
 
         <div className="relative mx-auto max-w-3xl px-6 py-12 md:py-16">
           <div className="flex items-center gap-2 mb-3">
