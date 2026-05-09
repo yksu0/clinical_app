@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { FileText } from "lucide-react";
 import { approveSubmission, rejectSubmission } from "../actions";
 import SubmitButton from "@/components/ui/SubmitButton";
 
@@ -24,6 +25,7 @@ interface Props {
   areasOfDuty: AreaOfDuty[];
   rotations: Rotation[];
   upload: { id: string; file_name: string } | null;
+  signedUrl: string | null;
 }
 
 type ActionState = { error: string | null };
@@ -35,6 +37,7 @@ export default function ReviewForm({
   areasOfDuty,
   rotations,
   upload,
+  signedUrl,
 }: Props) {
   const [approveState, approveAction] = useActionState(
     async (_prev: ActionState, formData: FormData): Promise<ActionState> => {
@@ -54,8 +57,44 @@ export default function ReviewForm({
     initialState
   );
 
+  const isPdf = upload?.file_name.toLowerCase().endsWith(".pdf");
+
   return (
     <div className="space-y-6">
+      {/* File preview */}
+      {upload && (
+        <div className="rounded-xl border border-border bg-surface overflow-hidden">
+          <p className="px-5 py-3 border-b border-border text-xs font-semibold uppercase tracking-wider text-(--text-secondary)">
+            Uploaded Proof
+          </p>
+          {signedUrl && !isPdf ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={signedUrl}
+              alt={upload.file_name}
+              className="w-full max-h-120 object-contain bg-background"
+            />
+          ) : (
+            <div className="flex items-center gap-3 px-5 py-4">
+              <FileText className="h-8 w-8 shrink-0 text-(--text-muted)" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{upload.file_name}</p>
+                {signedUrl && (
+                  <a
+                    href={signedUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-accent hover:underline"
+                  >
+                    Open PDF
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Approve form */}
       <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">
@@ -144,18 +183,8 @@ export default function ReviewForm({
             </div>
           )}
 
-          {/* Linked upload (read-only) */}
-          {upload && (
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-                Linked Upload
-              </label>
-              <input type="hidden" name="upload_id" value={upload.id} />
-              <p className="rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground">
-                {upload.file_name}
-              </p>
-            </div>
-          )}
+          {/* Hidden upload id */}
+          {upload && <input type="hidden" name="upload_id" value={upload.id} />}
 
           {/* Notes */}
           <div>

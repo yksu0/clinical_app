@@ -64,15 +64,24 @@ export default async function ReviewDetailPage({
 
   if (sub.status !== "pending") redirect("/admin/cases/review");
 
-  // Fetch linked upload name if any
+  // Fetch linked upload and generate a signed URL for preview
   let upload: { id: string; file_name: string } | null = null;
+  let signedUrl: string | null = null;
   if (sub.upload_id) {
     const { data } = await supabase
       .from("uploads")
-      .select("id, file_name")
+      .select("id, file_name, file_path")
       .eq("id", sub.upload_id)
       .single();
-    upload = data;
+    if (data) {
+      upload = { id: data.id, file_name: data.file_name };
+      if (data.file_path) {
+        const { data: urlData } = await supabase.storage
+          .from("case-uploads")
+          .createSignedUrl(data.file_path, 3600);
+        signedUrl = urlData?.signedUrl ?? null;
+      }
+    }
   }
 
   return (
@@ -130,6 +139,7 @@ export default async function ReviewDetailPage({
         areasOfDuty={areasOfDuty ?? []}
         rotations={rotations ?? []}
         upload={upload}
+        signedUrl={signedUrl}
       />
     </div>
   );
