@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
 import AssignForm from "./AssignForm";
+import AssignmentsTable from "./AssignmentsTable";
+import type { TableAssignment } from "./AssignmentsTable";
 import { updateAssignmentStatus } from "./actions";
 import SubmitButton from "@/components/ui/SubmitButton";
 
@@ -113,10 +115,11 @@ export default async function AssignmentsPage() {
   const { data: assignments } = await supabase
     .from("assignments")
     .select(
-      "id, scheduled_date, end_date, shift_id, rotation_id, status, notes, cancellation_reason, student:profiles!student_id(full_name), location:areas_of_duty(name), shift:shifts(name), rotation:rotations(name)"
+      "id, scheduled_date, end_date, status, notes, cancellation_reason, student:profiles!student_id(full_name), location:areas_of_duty(name), shift:shifts(name), rotation:rotations(name), ci:profiles!clinical_instructor_id(full_name)"
     )
-    .order("scheduled_date", { ascending: false })
-    .limit(50);
+    .order("scheduled_date", { ascending: false });
+
+  const recentAssignments = (assignments ?? []).slice(0, 5);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -151,13 +154,13 @@ export default async function AssignmentsPage() {
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-(--text-secondary)">
             Recent Assignments
           </h2>
-          {(assignments ?? []).length === 0 ? (
+          {recentAssignments.length === 0 ? (
             <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-12">
               <p className="text-xs text-(--text-muted)">No assignments yet</p>
             </div>
           ) : (
             <ul className="space-y-2">
-              {(assignments ?? []).map((a) => {
+              {recentAssignments.map((a) => {
                 const student = Array.isArray(a.student) ? a.student[0] : a.student;
                 const location = Array.isArray(a.location) ? a.location[0] : a.location;
                 const statusStyle = STATUS_STYLE[a.status] ?? STATUS_STYLE.scheduled;
@@ -234,6 +237,9 @@ export default async function AssignmentsPage() {
           )}
         </div>
       </div>
+
+      {/* All Assignments — sortable / filterable full table */}
+      <AssignmentsTable assignments={(assignments ?? []) as unknown as TableAssignment[]} />
     </div>
   );
 }
