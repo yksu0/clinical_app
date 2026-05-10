@@ -14,6 +14,7 @@ type Student = { id: string; full_name: string; section: string | null };
 type CaseType = { id: string; name: string };
 type AreaOfDuty = { id: string; name: string };
 type Rotation = { id: string; name: string };
+type ClinicalInstructor = { id: string; full_name: string };
 
 export default async function CasesReviewPage() {
   const supabase = await createClient();
@@ -24,6 +25,7 @@ export default async function CasesReviewPage() {
     { data: caseTypesRaw },
     { data: areasOfDutyRaw },
     { data: rotationsRaw },
+    { data: clinicalInstructorsRaw },
   ] = await Promise.all([
     supabase
       .from("case_submissions")
@@ -44,6 +46,12 @@ export default async function CasesReviewPage() {
     supabase.from("case_types").select("id, name").eq("is_active", true).order("name"),
     supabase.from("areas_of_duty").select("id, name").eq("is_active", true).order("name"),
     supabase.from("rotations").select("id, name").order("start_date", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("role", "ci")
+      .eq("is_active", true)
+      .order("full_name"),
   ]);
 
   const pending = (submissionsRaw ?? []) as unknown as Submission[];
@@ -63,6 +71,7 @@ export default async function CasesReviewPage() {
         caseTypes={(caseTypesRaw ?? []) as CaseType[]}
         areasOfDuty={(areasOfDutyRaw ?? []) as AreaOfDuty[]}
         rotations={(rotationsRaw ?? []) as Rotation[]}
+        clinicalInstructors={(clinicalInstructorsRaw ?? []) as ClinicalInstructor[]}
       />
     </div>
   );

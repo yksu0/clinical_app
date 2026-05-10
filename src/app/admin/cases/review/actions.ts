@@ -149,6 +149,7 @@ export async function logCase(formData: FormData) {
   const areaOfDutyId = formData.get("area_of_duty_id") as string;
   const date = formData.get("date") as string;
   const rotationId = (formData.get("rotation_id") as string) || null;
+  const clinicalInstructorId = (formData.get("clinical_instructor_id") as string) || null;
   const notes = ((formData.get("notes") as string) ?? "").trim() || null;
 
   if (!studentId || !caseTypeId || !areaOfDutyId) {
@@ -162,6 +163,7 @@ export async function logCase(formData: FormData) {
       case_type_id: caseTypeId,
       area_of_duty_id: areaOfDutyId,
       rotation_id: rotationId,
+      clinical_instructor_id: clinicalInstructorId,
       upload_id: null,
       date: date || null,
       notes,

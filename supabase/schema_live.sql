@@ -18,6 +18,16 @@ CREATE TYPE public.user_role AS ENUM ('admin', 'ci', 'student');
 -- ================================================================
 -- TABLES
 -- ================================================================
+CREATE TABLE IF NOT EXISTS public.admin_invites (
+  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  token text NOT NULL,
+  used boolean DEFAULT false NOT NULL,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  expires_at timestamptz DEFAULT (now() + interval '24 hours') NOT NULL,
+  CONSTRAINT admin_invites_pkey PRIMARY KEY (id),
+  CONSTRAINT admin_invites_token_key UNIQUE (token)
+);
+
 CREATE TABLE IF NOT EXISTS public.announcement_comments (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   announcement_id uuid NOT NULL,
@@ -48,7 +58,7 @@ CREATE TABLE IF NOT EXISTS public.areas_of_duty (
 
 CREATE TABLE IF NOT EXISTS public.assignments (
   id uuid DEFAULT uuid_generate_v4() NOT NULL,
-  student_id uuid NOT NULL,
+  student_id uuid,
   area_of_duty_id uuid NOT NULL,
   scheduled_date date NOT NULL,
   status public.assignment_status DEFAULT 'scheduled'::assignment_status NOT NULL,
@@ -62,6 +72,8 @@ CREATE TABLE IF NOT EXISTS public.assignments (
   shift_id uuid,
   rotation_id uuid,
   inclusive_days integer[] DEFAULT '{}'::integer[],
+  roster_id uuid,
+  clinical_instructor_id uuid,
   CONSTRAINT assignments_pkey PRIMARY KEY (id)
 );
 
@@ -82,11 +94,12 @@ CREATE TABLE IF NOT EXISTS public.case_logs (
   case_type_id uuid NOT NULL,
   area_of_duty_id uuid NOT NULL,
   upload_id uuid,
-  date date NOT NULL,
+  date date,
   notes text,
   logged_by uuid NOT NULL,
   created_at timestamptz DEFAULT now() NOT NULL,
   rotation_id uuid,
+  clinical_instructor_id uuid,
   CONSTRAINT case_logs_pkey PRIMARY KEY (id)
 );
 
@@ -98,13 +111,14 @@ CREATE TABLE IF NOT EXISTS public.case_submissions (
   area_of_duty_id uuid NOT NULL,
   rotation_id uuid,
   upload_id uuid,
-  date date NOT NULL,
+  date date,
   notes text,
   status text DEFAULT 'pending'::text NOT NULL,
   admin_note text,
   submitted_at timestamptz DEFAULT now() NOT NULL,
   reviewed_at timestamptz,
   reviewed_by uuid,
+  clinical_instructor_id uuid,
   CONSTRAINT case_submissions_pkey PRIMARY KEY (id)
 );
 
@@ -120,7 +134,7 @@ CREATE TABLE IF NOT EXISTS public.case_types (
 CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid NOT NULL,
   full_name text NOT NULL,
-  email text NOT NULL,
+  email text,
   role public.user_role DEFAULT 'student'::user_role NOT NULL,
   section text,
   is_verified boolean DEFAULT false NOT NULL,
@@ -128,6 +142,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at timestamptz DEFAULT now() NOT NULL,
   updated_at timestamptz DEFAULT now() NOT NULL,
   roster_id uuid,
+  ci_login_email text,
+  ci_credentials_expire_at timestamptz,
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
   CONSTRAINT profiles_email_key UNIQUE (email)
 );
@@ -155,8 +171,8 @@ CREATE TABLE IF NOT EXISTS public.requirements (
 CREATE TABLE IF NOT EXISTS public.rotations (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   name text NOT NULL,
-  start_date date NOT NULL,
-  end_date date NOT NULL,
+  start_date date,
+  end_date date,
   inclusive_days integer[] DEFAULT '{}'::integer[] NOT NULL,
   created_by uuid,
   created_at timestamptz DEFAULT now() NOT NULL,
@@ -227,6 +243,8 @@ ALTER TABLE public.assignments ADD CONSTRAINT fk_assignments_area_of_duty_id FOR
 ALTER TABLE public.assignments ADD CONSTRAINT fk_assignments_rotation_id FOREIGN KEY (rotation_id) REFERENCES public.rotations (id) ON DELETE SET NULL;
 ALTER TABLE public.audit_logs ADD CONSTRAINT fk_audit_logs_performed_by FOREIGN KEY (performed_by) REFERENCES public.profiles (id);
 ALTER TABLE public.case_logs ADD CONSTRAINT fk_case_logs_logged_by FOREIGN KEY (logged_by) REFERENCES public.profiles (id);
+ALTER TABLE public.case_logs ADD CONSTRAINT fk_case_logs_clinical_instructor_id FOREIGN KEY (clinical_instructor_id) REFERENCES public.profiles (id) ON DELETE SET NULL;
+ALTER TABLE public.case_submissions ADD CONSTRAINT fk_case_submissions_clinical_instructor_id FOREIGN KEY (clinical_instructor_id) REFERENCES public.profiles (id) ON DELETE SET NULL;
 ALTER TABLE public.case_logs ADD CONSTRAINT fk_case_logs_case_type_id FOREIGN KEY (case_type_id) REFERENCES public.case_types (id);
 ALTER TABLE public.case_logs ADD CONSTRAINT fk_case_logs_upload_id FOREIGN KEY (upload_id) REFERENCES public.uploads (id) ON DELETE SET NULL;
 ALTER TABLE public.case_logs ADD CONSTRAINT fk_case_logs_rotation_id FOREIGN KEY (rotation_id) REFERENCES public.rotations (id) ON DELETE SET NULL;

@@ -20,6 +20,7 @@ type Student = { id: string; full_name: string; section: string | null };
 type CaseType = { id: string; name: string };
 type AreaOfDuty = { id: string; name: string };
 type Rotation = { id: string; name: string };
+type ClinicalInstructor = { id: string; full_name: string };
 
 interface Props {
   pending: Submission[];
@@ -27,12 +28,13 @@ interface Props {
   caseTypes: CaseType[];
   areasOfDuty: AreaOfDuty[];
   rotations: Rotation[];
+  clinicalInstructors: ClinicalInstructor[];
 }
 
 type LogState = { error: string | null; success: boolean; assignmentCompleted?: boolean };
 const logInitial: LogState = { error: null, success: false };
 
-export default function CasesPanel({ pending, students, caseTypes, areasOfDuty, rotations }: Props) {
+export default function CasesPanel({ pending, students, caseTypes, areasOfDuty, rotations, clinicalInstructors }: Props) {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "log" ? "log" : "review";
   const preselectedStudent = searchParams.get("student") ?? "";
@@ -264,6 +266,24 @@ export default function CasesPanel({ pending, students, caseTypes, areasOfDuty, 
                     </div>
                   )}
                 </div>
+
+                {/* Clinical Instructor */}
+                {clinicalInstructors.length > 0 && (
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
+                      Clinical Instructor (optional)
+                    </label>
+                    <select
+                      name="clinical_instructor_id"
+                      className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+                    >
+                      <option value="">— Select instructor —</option>
+                      {clinicalInstructors.map((ci) => (
+                        <option key={ci.id} value={ci.id}>{ci.full_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Notes */}
                 <div>

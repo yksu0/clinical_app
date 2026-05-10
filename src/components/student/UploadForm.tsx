@@ -48,6 +48,7 @@ function formatBytes(bytes: number) {
 type CaseType = { id: string; name: string };
 type AreaOfDuty = { id: string; name: string };
 type Rotation = { id: string; name: string };
+type ClinicalInstructor = { id: string; full_name: string };
 type OpenAssignment = {
   id: string;
   scheduled_date: string;
@@ -59,9 +60,10 @@ interface Props {
   areasOfDuty: AreaOfDuty[];
   rotations: Rotation[];
   openAssignments: OpenAssignment[];
+  clinicalInstructors: ClinicalInstructor[];
 }
 
-export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssignments }: Props) {
+export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssignments, clinicalInstructors }: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -74,6 +76,7 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
   const [areaOfDutyId, setAreaOfDutyId] = useState("");
   const [date, setDate] = useState("");
   const [rotationId, setRotationId] = useState("");
+  const [clinicalInstructorId, setClinicalInstructorId] = useState("");
   const [assignmentId, setAssignmentId] = useState("");
   const [notes, setNotes] = useState("");
   const [lightbox, setLightbox] = useState(false);
@@ -143,6 +146,7 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
         date,
         rotationId: rotationId || null,
         assignmentId: assignmentId || null,
+        clinicalInstructorId: clinicalInstructorId || null,
         notes: notes.trim() || null,
       });
 
@@ -166,7 +170,7 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
               setStatus("idle");
               setFile(null);
               if (previewUrl) { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
-              setCaseTypeId(""); setAreaOfDutyId(""); setRotationId(""); setAssignmentId(""); setNotes("");
+              setCaseTypeId(""); setAreaOfDutyId(""); setRotationId(""); setAssignmentId(""); setClinicalInstructorId(""); setNotes("");
               setDate("");
               router.refresh();
             }}
@@ -348,6 +352,23 @@ export default function UploadForm({ caseTypes, areasOfDuty, rotations, openAssi
               >
                 <option value="">– No rotation –</option>
                 {rotations.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* Clinical Instructor */}
+          {clinicalInstructors.length > 0 && (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
+                Clinical Instructor (optional)
+              </label>
+              <select
+                value={clinicalInstructorId}
+                onChange={(e) => setClinicalInstructorId(e.target.value)}
+                className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+              >
+                <option value="">— Select instructor —</option>
+                {clinicalInstructors.map((ci) => <option key={ci.id} value={ci.id}>{ci.full_name}</option>)}
               </select>
             </div>
           )}

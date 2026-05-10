@@ -57,6 +57,7 @@ export async function createUploadAndSubmission(
     date: string | null;
     rotationId: string | null;
     assignmentId: string | null;
+    clinicalInstructorId: string | null;
     notes: string | null;
   },
 ) {
@@ -100,6 +101,7 @@ export async function createUploadAndSubmission(
       area_of_duty_id: caseDetails.areaOfDutyId,
       rotation_id: caseDetails.rotationId,
       assignment_id: caseDetails.assignmentId,
+      clinical_instructor_id: caseDetails.clinicalInstructorId,
       date: caseDetails.date || null,
       notes: caseDetails.notes,
       status: "pending",

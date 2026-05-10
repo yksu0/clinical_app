@@ -54,6 +54,7 @@ export default async function UploadPage() {
     { data: rotations },
     { data: assignments },
     { data: submissions },
+    { data: clinicalInstructors },
   ] = await Promise.all([
     supabase
       .from("uploads")
@@ -74,6 +75,12 @@ export default async function UploadPage() {
       .select("id, date, status, submitted_at, admin_note, case_types(name), areas_of_duty(name)")
       .eq("student_id", user!.id)
       .order("submitted_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("role", "ci")
+      .eq("is_active", true)
+      .order("full_name"),
   ]);
 
   const list = uploads ?? [];
@@ -92,6 +99,7 @@ export default async function UploadPage() {
         areasOfDuty={areasOfDuty ?? []}
         rotations={rotations ?? []}
         openAssignments={(assignments ?? []) as unknown as { id: string; scheduled_date: string; areas_of_duty: { name: string } | null }[]}
+        clinicalInstructors={(clinicalInstructors ?? []) as { id: string; full_name: string }[]}
       />
 
       {/* History */}
