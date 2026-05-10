@@ -3,7 +3,6 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/service";
 
 /** Levenshtein distance between two strings (optimised two-row approach) */
 function levenshtein(a: string, b: string): number {
@@ -144,47 +143,14 @@ export async function signup(formData: FormData) {
     redirect("/signup?error=email_in_use");
   }
 
-  // Upsert profile BEFORE checking for errors — even if the confirmation email
-  // fails (SMTP issue), the user may still be created in auth.users and needs a
-  // matching profile row so admin can see them in "Pending Approval".
+  // Profile creation is intentionally deferred to /auth/callback so the student
+  // only appears in the admin pending list AFTER confirming their email.
+
   const userId = signUpData?.user?.id;
-  if (userId) {
-    const serviceClient = createServiceClient();
-    const normalizedEmail = email.toLowerCase().trim();
-
-    // Remove any orphaned profile row with the same email but a different id.
-    // This can occur when a test/dev account is deleted from auth.users without
-    // the CASCADE reaching the profile (e.g. manual dashboard deletion).
-    await serviceClient
-      .from("profiles")
-      .delete()
-      .eq("email", normalizedEmail)
-      .neq("id", userId);
-
-    const { error: upsertError } = await serviceClient.from("profiles").upsert(
-      {
-        id: userId,
-        full_name: rosterEntry.full_name,
-        email: normalizedEmail,
-        roster_id: rosterEntry.id,
-        role: "student",
-        section: (rosterEntry as { id: string; full_name: string; section: string | null }).section ?? null,
-        is_verified: false,
-        is_active: true,
-      },
-      { onConflict: "id" },
-    );
-    if (upsertError) {
-      console.error("[signup] profile upsert failed for", userId, upsertError.message);
-    }
-  }
 
   if (error) {
     const msg = error.message.toLowerCase();
 
-    // If the auth user was created (userId exists), the account is good even if
-    // Supabase returned a non-critical error (e.g. SMTP delivery acknowledgement
-    // quirks). Only hard-stop on errors that mean the account was NOT created.
     if (!userId) {
       let code = "signup_failed";
       if (msg.includes("rate limit")) code = "email_rate_limit";
@@ -192,11 +158,9 @@ export async function signup(formData: FormData) {
       redirect(`/signup?error=${code}`);
     }
 
-    // userId exists — account created. If it's a true duplicate, surface that.
     if (msg.includes("already registered") || msg.includes("already been registered")) {
       redirect("/signup?error=email_in_use");
     }
-    // Otherwise treat as success (email likely sent despite error response).
   }
 
   // Account created — pending admin verification
