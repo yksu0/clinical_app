@@ -119,18 +119,16 @@ export async function deleteStudentAccount(formData: FormData) {
   const id = formData.get("id") as string;
   if (!id) return;
 
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
   // Confirm the account is deactivated before deleting
-  const { data: profile } = await supabase
+  const { data: profile } = await serviceClient
     .from("profiles")
     .select("is_active, email")
     .eq("id", id)
     .single();
 
   if (!profile || profile.is_active) return; // refuse to delete an active account
-
-  const serviceClient = createServiceClient();
 
   // Delete from Supabase Auth — this frees the email immediately
   const { error } = await serviceClient.auth.admin.deleteUser(id);
@@ -139,17 +137,20 @@ export async function deleteStudentAccount(formData: FormData) {
     return;
   }
 
-  // Nullify the auth-linked fields on the profile so history is preserved
+  // Nullify the email on the profile so history row is preserved without the email being locked
+  // (profile may already be cascade-deleted depending on FK setup — upsert is safe either way)
   await serviceClient
     .from("profiles")
     .update({ email: null, is_active: false })
     .eq("id", id);
 
   // Free the roster slot so the name can be re-used for a fresh signup
-  await serviceClient
-    .from("student_roster")
-    .update({ email: null })
-    .eq("email", profile.email);
+  if (profile.email) {
+    await serviceClient
+      .from("student_roster")
+      .update({ email: null })
+      .eq("email", profile.email);
+  }
 
   revalidatePath("/admin/roster");
   revalidatePath("/admin/students");
