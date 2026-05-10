@@ -39,7 +39,7 @@ export default async function RosterPage() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-8">
       <div>
         <h1 className="text-xl font-bold text-foreground">Student Roster</h1>
         <p className="mt-1 text-sm text-(--text-secondary)">
@@ -91,8 +91,11 @@ export default async function RosterPage() {
         </section>
       )}
 
+      {/* ── Students + Whitelist side-by-side ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
       {/* ── Active / Verified Students ── */}
-      <section>
+      <section className="min-w-0">
         <h2 className="mb-3 text-sm font-semibold text-(--text-secondary) uppercase tracking-wider">
           Students ({activeStudents.length})
         </h2>
@@ -154,7 +157,7 @@ export default async function RosterPage() {
       </section>
 
       {/* ── Pre-Registration Whitelist ── */}
-      <section>
+      <section className="min-w-0">
         <h2 className="mb-3 text-sm font-semibold text-(--text-secondary) uppercase tracking-wider">
           Pre-Registration Whitelist ({unclaimedRoster.length})
         </h2>
@@ -208,6 +211,8 @@ export default async function RosterPage() {
           )}
         </div>
       </section>
+
+      </div>{/* end side-by-side grid */}
     </div>
   );
 }
