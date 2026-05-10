@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 export type BulkResult = { added: number; skipped: number };
 
@@ -107,6 +108,51 @@ export async function toggleStudentActive(formData: FormData) {
     .update({ is_active: !currentActive })
     .eq("id", id);
   revalidatePath("/admin/roster");
+}
+
+/**
+ * Permanently delete a student's auth account, freeing their email for re-use.
+ * Their profile row and all case history are kept for audit purposes.
+ * Only allowed for deactivated accounts (is_active = false).
+ */
+export async function deleteStudentAccount(formData: FormData) {
+  const id = formData.get("id") as string;
+  if (!id) return;
+
+  const supabase = await createClient();
+
+  // Confirm the account is deactivated before deleting
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_active, email")
+    .eq("id", id)
+    .single();
+
+  if (!profile || profile.is_active) return; // refuse to delete an active account
+
+  const serviceClient = createServiceClient();
+
+  // Delete from Supabase Auth — this frees the email immediately
+  const { error } = await serviceClient.auth.admin.deleteUser(id);
+  if (error) {
+    console.error("[deleteStudentAccount] auth delete failed:", error.message);
+    return;
+  }
+
+  // Nullify the auth-linked fields on the profile so history is preserved
+  await serviceClient
+    .from("profiles")
+    .update({ email: null, is_active: false })
+    .eq("id", id);
+
+  // Free the roster slot so the name can be re-used for a fresh signup
+  await serviceClient
+    .from("student_roster")
+    .update({ email: null })
+    .eq("email", profile.email);
+
+  revalidatePath("/admin/roster");
+  revalidatePath("/admin/students");
 }
 
 /** Remove an entry from the roster whitelist (only if no profile linked) */
