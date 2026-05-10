@@ -5,10 +5,10 @@ import {
   removeFromRoster,
   updateStudentSection,
   updateRosterEntrySection,
-  deleteStudentAccount,
 } from "./actions";
 import SubmitButton from "@/components/ui/SubmitButton";
 import BulkAddForm from "./BulkAddForm";
+import DeleteAccountButton from "./DeleteAccountButton";
 
 export default async function RosterPage() {
   const supabase = await createClient();
@@ -143,20 +143,7 @@ export default async function RosterPage() {
                     />
                   </form>
                   {!s.is_active && (
-                    <form
-                      action={deleteStudentAccount}
-                      className="shrink-0"
-                      onSubmit={(e) => {
-                        if (!confirm(`Permanently delete ${s.full_name}'s account? Their history will be kept but the email will be freed. This cannot be undone.`)) e.preventDefault();
-                      }}
-                    >
-                      <input type="hidden" name="id" value={s.id} />
-                      <SubmitButton
-                        label="Delete"
-                        loadingLabel="Deleting…"
-                        variant="danger"
-                      />
-                    </form>
+                    <DeleteAccountButton id={s.id} fullName={s.full_name} />
                   )}
                 </li>
               ))}
