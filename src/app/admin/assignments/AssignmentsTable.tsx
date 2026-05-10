@@ -30,6 +30,7 @@ export type TableAssignment = {
   notes: string | null;
   cancellation_reason: string | null;
   student: { full_name: string } | null;
+  roster: { full_name: string } | null;
   location: { name: string } | null;
   shift: { name: string } | null;
   rotation: { name: string } | null;
@@ -76,7 +77,7 @@ export default function AssignmentsTable({ assignments }: Props) {
     const rows = filter === "all" ? [...assignments] : assignments.filter((a) => a.status === filter);
     return rows.sort((a, b) => {
       let av = "", bv = "";
-      if (sortKey === "student") { av = a.student?.full_name ?? ""; bv = b.student?.full_name ?? ""; }
+      if (sortKey === "student") { av = a.student?.full_name ?? a.roster?.full_name ?? ""; bv = b.student?.full_name ?? b.roster?.full_name ?? ""; }
       else if (sortKey === "location") { av = a.location?.name ?? ""; bv = b.location?.name ?? ""; }
       else if (sortKey === "date") { av = a.scheduled_date; bv = b.scheduled_date; }
       else if (sortKey === "status") { av = a.status; bv = b.status; }
@@ -195,7 +196,10 @@ export default function AssignmentsTable({ assignments }: Props) {
                     {/* Student + CI + notes */}
                     <td className="px-4 py-3">
                       <p className="text-xs font-medium text-foreground">
-                        {a.student?.full_name ?? "—"}
+                        {a.student?.full_name ?? a.roster?.full_name ?? "—"}
+                        {!a.student && a.roster && (
+                          <span className="ml-1.5 rounded px-1 py-0.5 text-[10px] font-normal bg-elevated text-(--text-muted)">not signed up</span>
+                        )}
                       </p>
                       {a.ci && (
                         <p className="text-xs text-(--text-muted)">CI: {a.ci.full_name}</p>

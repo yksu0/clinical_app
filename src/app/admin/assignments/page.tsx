@@ -115,7 +115,7 @@ export default async function AssignmentsPage() {
   const { data: assignments } = await supabase
     .from("assignments")
     .select(
-      "id, scheduled_date, end_date, status, notes, cancellation_reason, student:profiles!student_id(full_name), location:areas_of_duty(name), shift:shifts(name), rotation:rotations(name), ci:profiles!clinical_instructor_id(full_name)"
+      "id, scheduled_date, end_date, status, notes, cancellation_reason, student:profiles!student_id(full_name), roster:student_roster!roster_id(full_name), location:areas_of_duty(name), shift:shifts(name), rotation:rotations(name), ci:profiles!clinical_instructor_id(full_name)"
     )
     .order("scheduled_date", { ascending: false });
 
@@ -162,8 +162,12 @@ export default async function AssignmentsPage() {
             <ul className="space-y-2">
               {recentAssignments.map((a) => {
                 const student = Array.isArray(a.student) ? a.student[0] : a.student;
+                const roster = Array.isArray(a.roster) ? a.roster[0] : a.roster;
                 const location = Array.isArray(a.location) ? a.location[0] : a.location;
                 const statusStyle = STATUS_STYLE[a.status] ?? STATUS_STYLE.scheduled;
+                const displayName = (student as { full_name: string } | null)?.full_name
+                  ?? (roster as { full_name: string } | null)?.full_name
+                  ?? "—";
 
                 return (
                   <li
@@ -173,7 +177,10 @@ export default async function AssignmentsPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-foreground">
-                          {student?.full_name ?? "\u2014"}
+                          {displayName}
+                          {!student && roster && (
+                            <span className="ml-1.5 rounded px-1 py-0.5 text-[10px] font-normal bg-elevated text-(--text-muted)">not signed up</span>
+                          )}
                         </p>
                         <p className="text-xs text-(--text-muted)">
                           {location?.name ?? "\u2014"}
