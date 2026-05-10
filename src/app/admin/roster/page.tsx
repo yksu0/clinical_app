@@ -16,11 +16,12 @@ export default async function RosterPage() {
   const [{ data: roster }, { data: students }] = await Promise.all([
     // Whitelist entries
     supabase.from("student_roster").select("*").order("full_name"),
-    // Signed-up student profiles (not admin/ci)
+    // Signed-up student profiles (not admin/ci), exclude permanently deleted (email = null)
     supabase
       .from("profiles")
       .select("id, full_name, email, section, is_verified, is_active, created_at")
       .eq("role", "student")
+      .not("email", "is", null)
       .order("full_name"),
   ]);
 
